@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ohm&#x27;s Law DC Circuit &amp; Triangle</title>
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; padding: 24px; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="visual-card diagram-wrapper" style="background:#fff; border-radius:12px; padding:20px; box-shadow:0 4px 16px rgba(0,0,0,0.06); max-width:860px; margin:auto;">
+    <h3 style="margin-top:0; color:#0f172a; font-size:18px;">Ohm&#x27;s Law DC Circuit &amp; Triangle</h3>
+    <p style="color:#475569; font-size:14px; line-height:1.5;">Schematic of a simple closed DC circuit with voltage source, current loop, and resistor.</p>
+    <div style="margin-top:16px; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="100%" height="100%" style="background:#FFFFFF; font-family: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif;">
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M 0 1 L 10 5 L 0 9 z" fill="#3B82F6" />
+  </marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M 0 1 L 10 5 L 0 9 z" fill="#10B981" />
+  </marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M 0 1 L 10 5 L 0 9 z" fill="#F59E0B" />
+  </marker>
+  <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%" filterUnits="userSpaceOnUse">
+    <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.08" />
+  </filter>
+</defs>
+<text x="24" y="36" font-size="17" font-weight="700" fill="#0F172A">Ohm&#x27;s Law DC Circuit &amp; Triangle</text>
+<path d="M 250 195.0 Q 282.5 130.0 315 85.0" fill="none" stroke="#DC2626" stroke-width="2.5" marker-end="url(#arrow)" />
+<rect x="242.5" y="119.0" width="80" height="18" rx="4" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" />
+<text x="282.5" y="132.0" font-size="11" font-weight="600" fill="#DC2626" text-anchor="middle">Current Out</text>
+<path d="M 485 85.0 Q 517.5 130.0 550 195.0" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)" />
+<rect x="477.5" y="119.0" width="80" height="18" rx="4" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" />
+<text x="517.5" y="132.0" font-size="11" font-weight="600" fill="#2563EB" text-anchor="middle">Enters Load</text>
+<path d="M 550 195.0 Q 517.5 240.0 485 305.0" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)" />
+<rect x="477.5" y="229.0" width="80" height="18" rx="4" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" />
+<text x="517.5" y="242.0" font-size="11" font-weight="600" fill="#059669" text-anchor="middle">Voltage Drop</text>
+<path d="M 315 305.0 Q 282.5 240.0 250 195.0" fill="none" stroke="#475569" stroke-width="2.5" marker-end="url(#arrow)" />
+<rect x="242.5" y="229.0" width="80" height="18" rx="4" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" />
+<text x="282.5" y="242.0" font-size="11" font-weight="600" fill="#475569" text-anchor="middle">Closed Loop</text>
+<rect x="80" y="150" width="170" height="90" rx="10" fill="#FEE2E2" stroke="#EF4444" stroke-width="2" filter="url(#shadow)"/>
+<text x="165.0" y="194.0" font-size="13" font-weight="700" fill="#DC2626" text-anchor="middle">DC Voltage (V = 12V)</text>
+<text x="165.0" y="209.0" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">Battery</text>
+<rect x="315" y="60" width="170" height="50" rx="24" fill="#DBEAFE" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+<text x="400.0" y="84.0" font-size="13" font-weight="700" fill="#2563EB" text-anchor="middle">Current (I = 3A)</text>
+<text x="400.0" y="99.0" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">Flow</text>
+<rect x="550" y="150" width="170" height="90" rx="10" fill="#D1FAE5" stroke="#10B981" stroke-width="2" filter="url(#shadow)"/>
+<text x="635.0" y="194.0" font-size="13" font-weight="700" fill="#059669" text-anchor="middle">Resistor (R = 4Ω)</text>
+<text x="635.0" y="209.0" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">Load</text>
+<rect x="315" y="280" width="170" height="50" rx="24" fill="#F1F5F9" stroke="#64748B" stroke-width="2" filter="url(#shadow)"/>
+<text x="400.0" y="304.0" font-size="13" font-weight="700" fill="#475569" text-anchor="middle">Return Path</text>
+<text x="400.0" y="319.0" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">0V Reference</text>
+<g transform="translate(40, 30)">
+  <rect x="0" y="0" width="380" height="42" rx="6" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="12" y="16" font-size="11" font-weight="700" fill="#7C3AED">Ohm&#x27;s Triangle</text>
+  <text x="12" y="32" font-size="11" font-weight="500" fill="#334155">Cover V: I ? R | Cover I: V / R | Cover R: V / I</text>
+</g>
+</svg>
+    </div>
+</div>
+</body>
+</html>

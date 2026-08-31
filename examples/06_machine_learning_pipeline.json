@@ -1,0 +1,8 @@
+{
+  "topic": "Machine Learning",
+  "concept": "Machine Learning pipeline",
+  "level": "advanced",
+  "language": "English",
+  "lesson_context": "Explain the end-to-end architecture of a production ML pipeline from ingestion to inference and drift monitoring.",
+  "include_secondary": true
+}

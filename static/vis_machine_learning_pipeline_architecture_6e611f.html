@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Machine Learning Pipeline Architecture</title>
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; padding: 24px; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="visual-card arch-wrapper" style="background:#fff; border-radius:12px; padding:20px; box-shadow:0 4px 16px rgba(0,0,0,0.06); max-width:860px; margin:auto;">
+    <h3 style="margin-top:0; color:#0f172a; font-size:18px;">Machine Learning Pipeline Architecture</h3>
+    <p style="color:#475569; font-size:14px; line-height:1.5;">End-to-end production ML pipeline from ingestion to serving and monitoring.</p>
+    <div style="margin-top:16px; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 670" width="100%" height="100%" style="background:#FFFFFF; font-family: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif;">
+<defs>
+  <marker id="arch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M 0 1 L 10 5 L 0 9 z" fill="#2563EB" />
+  </marker>
+  <filter id="a-shadow" x="-5%" y="-5%" width="115%" height="115%" filterUnits="userSpaceOnUse">
+    <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.06" />
+  </filter>
+</defs>
+<text x="30" y="36" font-size="18" font-weight="700" fill="#0F172A">Machine Learning Pipeline Architecture</text>
+<rect x="30" y="65" width="760" height="85" rx="10" fill="#F8FAFC" stroke="#2563EB" stroke-width="1.5" stroke-dasharray="6,4" />
+<text x="45" y="87" font-size="12" font-weight="700" fill="#2563EB">1. Data Ingestion &amp; Storage</text>
+<text x="45" y="101" font-size="10" font-weight="500" fill="#64748B">Raw streaming &amp; batch</text>
+<rect x="220" y="77" width="240" height="61" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1" filter="url(#a-shadow)" />
+<text x="340.0" y="97" font-size="12" font-weight="700" fill="#1E293B" text-anchor="middle">Data Sources</text>
+<text x="340.0" y="113" font-size="10" font-weight="600" fill="#2563EB" text-anchor="middle">Kafka / S3</text>
+<rect x="30" y="175" width="760" height="85" rx="10" fill="#F8FAFC" stroke="#059669" stroke-width="1.5" stroke-dasharray="6,4" />
+<text x="45" y="197" font-size="12" font-weight="700" fill="#059669">2. Feature Engineering</text>
+<text x="45" y="211" font-size="10" font-weight="500" fill="#64748B">Transformation &amp; validation</text>
+<rect x="220" y="187" width="240" height="61" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1" filter="url(#a-shadow)" />
+<text x="340.0" y="207" font-size="12" font-weight="700" fill="#1E293B" text-anchor="middle">Feature Store</text>
+<text x="340.0" y="223" font-size="10" font-weight="600" fill="#059669" text-anchor="middle">Feast / Spark</text>
+<rect x="30" y="285" width="760" height="85" rx="10" fill="#F8FAFC" stroke="#7C3AED" stroke-width="1.5" stroke-dasharray="6,4" />
+<text x="45" y="307" font-size="12" font-weight="700" fill="#7C3AED">3. Model Training &amp; Tuning</text>
+<text x="45" y="321" font-size="10" font-weight="500" fill="#64748B">GPU clusters &amp; hyperparams</text>
+<rect x="220" y="297" width="240" height="61" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1" filter="url(#a-shadow)" />
+<text x="340.0" y="317" font-size="12" font-weight="700" fill="#1E293B" text-anchor="middle">Training Cluster</text>
+<text x="340.0" y="333" font-size="10" font-weight="600" fill="#7C3AED" text-anchor="middle">PyTorch / GPUs</text>
+<rect x="30" y="395" width="760" height="85" rx="10" fill="#F8FAFC" stroke="#D97706" stroke-width="1.5" stroke-dasharray="6,4" />
+<text x="45" y="417" font-size="12" font-weight="700" fill="#D97706">4. Evaluation &amp; Registry</text>
+<text x="45" y="431" font-size="10" font-weight="500" fill="#64748B">Quality gate &amp; versioning</text>
+<rect x="220" y="407" width="240" height="61" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1" filter="url(#a-shadow)" />
+<text x="340.0" y="427" font-size="12" font-weight="700" fill="#1E293B" text-anchor="middle">Model Registry</text>
+<text x="340.0" y="443" font-size="10" font-weight="600" fill="#D97706" text-anchor="middle">MLflow / W&amp;B</text>
+<rect x="30" y="505" width="760" height="85" rx="10" fill="#F8FAFC" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="6,4" />
+<text x="45" y="527" font-size="12" font-weight="700" fill="#DC2626">5. Serving &amp; Monitoring</text>
+<text x="45" y="541" font-size="10" font-weight="500" fill="#64748B">Inference API &amp; drift monitor</text>
+<rect x="220" y="517" width="240" height="61" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1" filter="url(#a-shadow)" />
+<text x="340.0" y="537" font-size="12" font-weight="700" fill="#1E293B" text-anchor="middle">Inference Service</text>
+<text x="340.0" y="553" font-size="10" font-weight="600" fill="#DC2626" text-anchor="middle">FastAPI / Triton</text>
+<rect x="476" y="517" width="240" height="61" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1" filter="url(#a-shadow)" />
+<text x="596.0" y="537" font-size="12" font-weight="700" fill="#1E293B" text-anchor="middle">Drift Monitor</text>
+<text x="596.0" y="553" font-size="10" font-weight="600" fill="#DC2626" text-anchor="middle">Prometheus</text>
+<line x1="775" y1="80" x2="775" y2="580" stroke="#2563EB" stroke-width="3" marker-end="url(#arch-arrow)" />
+<text x="785" y="335.0" font-size="11" font-weight="700" fill="#2563EB" transform="rotate(90, 785, 335.0)" text-anchor="middle">PIPELINE FLOW</text>
+</svg>
+    </div>
+    
+            <div style="margin-top:16px; padding:12px 16px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;">
+                <div style="font-size:13px; font-weight:700; color:#166534; margin-bottom:6px;">System Architectural Principles:</div>
+                <ul style="margin:0; padding-left:20px; font-size:13px; color:#14532d;"><li style="margin-bottom:4px;">Reproducibility: Lineage tracked from features to weights.</li><li style="margin-bottom:4px;">Continuous Training: Automated triggers upon data drift.</li><li style="margin-bottom:4px;">Low Latency Serving: Cached feature vectors for sub-ms inference.</li></ul>
+            </div>
+            
+</div>
+</body>
+</html>

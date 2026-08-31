@@ -1,0 +1,8 @@
+{
+  "topic": "Computer Science",
+  "concept": "Python for loop",
+  "level": "beginner",
+  "language": "English",
+  "lesson_context": "Explain how Python iterates over elements in a list, updating local state across iterations.",
+  "include_secondary": true
+}

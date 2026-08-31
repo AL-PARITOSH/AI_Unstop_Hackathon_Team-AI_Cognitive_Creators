@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Search Python Execution Trace</title>
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; padding: 24px; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="visual-card code-wrapper" style="background:#fff; border-radius:12px; padding:24px; box-shadow:0 4px 16px rgba(0,0,0,0.06); max-width:880px; margin:auto; font-family:system-ui, -apple-system, sans-serif;">
+    <style>pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.highlight-pygments .hll { background-color: #ffffcc }
+.highlight-pygments { background: #f8f8f8; }
+.highlight-pygments .c { color: #3D7B7B; font-style: italic } /* Comment */
+.highlight-pygments .err { border: 1px solid #F00 } /* Error */
+.highlight-pygments .k { color: #008000; font-weight: bold } /* Keyword */
+.highlight-pygments .o { color: #666 } /* Operator */
+.highlight-pygments .ch { color: #3D7B7B; font-style: italic } /* Comment.Hashbang */
+.highlight-pygments .cm { color: #3D7B7B; font-style: italic } /* Comment.Multiline */
+.highlight-pygments .cp { color: #9C6500 } /* Comment.Preproc */
+.highlight-pygments .cpf { color: #3D7B7B; font-style: italic } /* Comment.PreprocFile */
+.highlight-pygments .c1 { color: #3D7B7B; font-style: italic } /* Comment.Single */
+.highlight-pygments .cs { color: #3D7B7B; font-style: italic } /* Comment.Special */
+.highlight-pygments .gd { color: #A00000 } /* Generic.Deleted */
+.highlight-pygments .ge { font-style: italic } /* Generic.Emph */
+.highlight-pygments .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.highlight-pygments .gr { color: #E40000 } /* Generic.Error */
+.highlight-pygments .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.highlight-pygments .gi { color: #008400 } /* Generic.Inserted */
+.highlight-pygments .go { color: #717171 } /* Generic.Output */
+.highlight-pygments .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
+.highlight-pygments .gs { font-weight: bold } /* Generic.Strong */
+.highlight-pygments .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.highlight-pygments .gt { color: #04D } /* Generic.Traceback */
+.highlight-pygments .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
+.highlight-pygments .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
+.highlight-pygments .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
+.highlight-pygments .kp { color: #008000 } /* Keyword.Pseudo */
+.highlight-pygments .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
+.highlight-pygments .kt { color: #B00040 } /* Keyword.Type */
+.highlight-pygments .m { color: #666 } /* Literal.Number */
+.highlight-pygments .s { color: #BA2121 } /* Literal.String */
+.highlight-pygments .na { color: #687822 } /* Name.Attribute */
+.highlight-pygments .nb { color: #008000 } /* Name.Builtin */
+.highlight-pygments .nc { color: #00F; font-weight: bold } /* Name.Class */
+.highlight-pygments .no { color: #800 } /* Name.Constant */
+.highlight-pygments .nd { color: #A2F } /* Name.Decorator */
+.highlight-pygments .ni { color: #717171; font-weight: bold } /* Name.Entity */
+.highlight-pygments .ne { color: #CB3F38; font-weight: bold } /* Name.Exception */
+.highlight-pygments .nf { color: #00F } /* Name.Function */
+.highlight-pygments .nl { color: #767600 } /* Name.Label */
+.highlight-pygments .nn { color: #00F; font-weight: bold } /* Name.Namespace */
+.highlight-pygments .nt { color: #008000; font-weight: bold } /* Name.Tag */
+.highlight-pygments .nv { color: #19177C } /* Name.Variable */
+.highlight-pygments .ow { color: #A2F; font-weight: bold } /* Operator.Word */
+.highlight-pygments .w { color: #BBB } /* Text.Whitespace */
+.highlight-pygments .mb { color: #666 } /* Literal.Number.Bin */
+.highlight-pygments .mf { color: #666 } /* Literal.Number.Float */
+.highlight-pygments .mh { color: #666 } /* Literal.Number.Hex */
+.highlight-pygments .mi { color: #666 } /* Literal.Number.Integer */
+.highlight-pygments .mo { color: #666 } /* Literal.Number.Oct */
+.highlight-pygments .sa { color: #BA2121 } /* Literal.String.Affix */
+.highlight-pygments .sb { color: #BA2121 } /* Literal.String.Backtick */
+.highlight-pygments .sc { color: #BA2121 } /* Literal.String.Char */
+.highlight-pygments .dl { color: #BA2121 } /* Literal.String.Delimiter */
+.highlight-pygments .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+.highlight-pygments .s2 { color: #BA2121 } /* Literal.String.Double */
+.highlight-pygments .se { color: #AA5D1F; font-weight: bold } /* Literal.String.Escape */
+.highlight-pygments .sh { color: #BA2121 } /* Literal.String.Heredoc */
+.highlight-pygments .si { color: #A45A77; font-weight: bold } /* Literal.String.Interpol */
+.highlight-pygments .sx { color: #008000 } /* Literal.String.Other */
+.highlight-pygments .sr { color: #A45A77 } /* Literal.String.Regex */
+.highlight-pygments .s1 { color: #BA2121 } /* Literal.String.Single */
+.highlight-pygments .ss { color: #19177C } /* Literal.String.Symbol */
+.highlight-pygments .bp { color: #008000 } /* Name.Builtin.Pseudo */
+.highlight-pygments .fm { color: #00F } /* Name.Function.Magic */
+.highlight-pygments .vc { color: #19177C } /* Name.Variable.Class */
+.highlight-pygments .vg { color: #19177C } /* Name.Variable.Global */
+.highlight-pygments .vi { color: #19177C } /* Name.Variable.Instance */
+.highlight-pygments .vm { color: #19177C } /* Name.Variable.Magic */
+.highlight-pygments .il { color: #666 } /* Literal.Number.Integer.Long */
+    .highlight-pygments { border-radius:8px; overflow:hidden; border:1px solid #e2e8f0; font-size:13px; }
+    .highlight-pygments pre { margin:0; padding:12px; line-height:1.5; }
+    .highlight-pygments .linenodiv pre { color:#94a3b8; background:#f8fafc; padding-right:10px; border-right:1px solid #e2e8f0; }
+    </style>
+    <h3 style="margin-top:0; color:#0f172a; font-size:18px;">Binary Search Python Execution Trace</h3>
+    <p style="color:#475569; font-size:14px; line-height:1.5;">Step-by-step memory pointer trace searching for target = 23.</p>
+    
+    <div style="margin:16px 0;">
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:#64748b; margin-bottom:6px;">Source Code (python):</div>
+        <div class="highlight-pygments"><table class="highlight-pygmentstable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span></pre></div></td><td class="code"><div><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">binary_search</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+    <span class="n">low</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="hll">    <span class="n">high</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+</span><span class="hll">    <span class="k">while</span> <span class="n">low</span> <span class="o">&lt;=</span> <span class="n">high</span><span class="p">:</span>
+</span><span class="hll">        <span class="n">mid</span> <span class="o">=</span> <span class="p">(</span><span class="n">low</span> <span class="o">+</span> <span class="n">high</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+</span><span class="hll">        <span class="k">if</span> <span class="n">arr</span><span class="p">[</span><span class="n">mid</span><span class="p">]</span> <span class="o">==</span> <span class="n">target</span><span class="p">:</span>
+</span><span class="hll">            <span class="k">return</span> <span class="n">mid</span>
+</span><span class="hll">        <span class="k">elif</span> <span class="n">arr</span><span class="p">[</span><span class="n">mid</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">target</span><span class="p">:</span>
+</span>            <span class="n">low</span> <span class="o">=</span> <span class="n">mid</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">high</span> <span class="o">=</span> <span class="n">mid</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+
+<span class="n">res</span> <span class="o">=</span> <span class="n">binary_search</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">23</span><span class="p">,</span> <span class="mi">38</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">72</span><span class="p">,</span> <span class="mi">91</span><span class="p">],</span> <span class="mi">23</span><span class="p">)</span>
+</pre></div></td></tr></table></div>
+
+    </div>
+
+    <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:#64748b; margin-top:20px; margin-bottom:8px;">Execution State & Variable Trace:</div>
+    <div style="overflow-x:auto; border:1px solid #e2e8f0; border-radius:8px;">
+        <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+            <thead>
+                <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0; color:#475569; font-size:11px; text-transform:uppercase;">
+                    <th style="padding:10px 12px;">Step</th>
+                    <th style="padding:10px 12px;">Line</th>
+                    <th style="padding:10px 12px;">Executing Statement</th>
+                    <th style="padding:10px 12px;">Action & Explanation</th>
+                    <th style="padding:10px 12px;">Variables In Scope</th>
+                    <th style="padding:10px 12px;">Stdout</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:8px 12px; font-weight:700; color:#2563eb;">Step 1</td>
+                <td style="padding:8px 12px; font-family:monospace; color:#475569;">Line 2</td>
+                <td style="padding:8px 12px; font-family:monospace; font-size:12px; color:#0f172a; background:#f8fafc;">low = 0, high = 9</td>
+                <td style="padding:8px 12px; font-size:12px; color:#334155;">Initialize search bounds</td>
+                <td style="padding:8px 12px; font-family:monospace; font-size:11px; color:#7c3aed;">{&quot;low&quot;: 0, &quot;high&quot;: 9, &quot;target&quot;: 23}</td>
+                <td style="padding:8px 12px; font-size:12px;"><span style="color:#94a3b8;">-</span></td>
+            </tr>
+            
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:8px 12px; font-weight:700; color:#2563eb;">Step 2</td>
+                <td style="padding:8px 12px; font-family:monospace; color:#475569;">Line 4</td>
+                <td style="padding:8px 12px; font-family:monospace; font-size:12px; color:#0f172a; background:#f8fafc;">mid = (0 + 9) // 2 -&gt; 4</td>
+                <td style="padding:8px 12px; font-size:12px; color:#334155;">Mid index 4 has value 16</td>
+                <td style="padding:8px 12px; font-family:monospace; font-size:11px; color:#7c3aed;">{&quot;low&quot;: 0, &quot;high&quot;: 9, &quot;mid&quot;: 4, &quot;arr[mid]&quot;: 16}</td>
+                <td style="padding:8px 12px; font-size:12px;"><span style="color:#94a3b8;">-</span></td>
+            </tr>
+            
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:8px 12px; font-weight:700; color:#2563eb;">Step 3</td>
+                <td style="padding:8px 12px; font-family:monospace; color:#475569;">Line 8</td>
+                <td style="padding:8px 12px; font-family:monospace; font-size:12px; color:#0f172a; background:#f8fafc;">low = mid + 1 -&gt; 5</td>
+                <td style="padding:8px 12px; font-size:12px; color:#334155;">16 &lt; 23, search right half</td>
+                <td style="padding:8px 12px; font-family:monospace; font-size:11px; color:#7c3aed;">{&quot;low&quot;: 5, &quot;high&quot;: 9, &quot;mid&quot;: 4}</td>
+                <td style="padding:8px 12px; font-size:12px;"><span style="color:#94a3b8;">-</span></td>
+            </tr>
+            
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:8px 12px; font-weight:700; color:#2563eb;">Step 4</td>
+                <td style="padding:8px 12px; font-family:monospace; color:#475569;">Line 4</td>
+                <td style="padding:8px 12px; font-family:monospace; font-size:12px; color:#0f172a; background:#f8fafc;">mid = (5 + 9) // 2 -&gt; 7</td>
+                <td style="padding:8px 12px; font-size:12px; color:#334155;">Mid index 7 has value 56</td>
+                <td style="padding:8px 12px; font-family:monospace; font-size:11px; color:#7c3aed;">{&quot;low&quot;: 5, &quot;high&quot;: 9, &quot;mid&quot;: 7, &quot;arr[mid]&quot;: 56}</td>
+                <td style="padding:8px 12px; font-size:12px;"><span style="color:#94a3b8;">-</span></td>
+            </tr>
+            
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:8px 12px; font-weight:700; color:#2563eb;">Step 5</td>
+                <td style="padding:8px 12px; font-family:monospace; color:#475569;">Line 10</td>
+                <td style="padding:8px 12px; font-family:monospace; font-size:12px; color:#0f172a; background:#f8fafc;">high = mid - 1 -&gt; 6</td>
+                <td style="padding:8px 12px; font-size:12px; color:#334155;">56 &gt; 23, search left half</td>
+                <td style="padding:8px 12px; font-family:monospace; font-size:11px; color:#7c3aed;">{&quot;low&quot;: 5, &quot;high&quot;: 6, &quot;mid&quot;: 7}</td>
+                <td style="padding:8px 12px; font-size:12px;"><span style="color:#94a3b8;">-</span></td>
+            </tr>
+            
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:8px 12px; font-weight:700; color:#2563eb;">Step 6</td>
+                <td style="padding:8px 12px; font-family:monospace; color:#475569;">Line 4</td>
+                <td style="padding:8px 12px; font-family:monospace; font-size:12px; color:#0f172a; background:#f8fafc;">mid = (5 + 6) // 2 -&gt; 5</td>
+                <td style="padding:8px 12px; font-size:12px; color:#334155;">Mid index 5 has value 23</td>
+                <td style="padding:8px 12px; font-family:monospace; font-size:11px; color:#7c3aed;">{&quot;low&quot;: 5, &quot;high&quot;: 6, &quot;mid&quot;: 5, &quot;arr[mid]&quot;: 23}</td>
+                <td style="padding:8px 12px; font-size:12px;"><span style="color:#94a3b8;">-</span></td>
+            </tr>
+            
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:8px 12px; font-weight:700; color:#2563eb;">Step 7</td>
+                <td style="padding:8px 12px; font-family:monospace; color:#475569;">Line 6</td>
+                <td style="padding:8px 12px; font-family:monospace; font-size:12px; color:#0f172a; background:#f8fafc;">return 5</td>
+                <td style="padding:8px 12px; font-size:12px; color:#334155;">Match found at index 5</td>
+                <td style="padding:8px 12px; font-family:monospace; font-size:11px; color:#7c3aed;">{&quot;result&quot;: 5}</td>
+                <td style="padding:8px 12px; font-size:12px;"><span style="color:#94a3b8;">-</span></td>
+            </tr>
+            
+            </tbody>
+        </table>
+    </div>
+
+    
+            <div style="margin-top:16px; padding:12px 16px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px;">
+                <div style="font-size:13px; font-weight:700; color:#1e40af; margin-bottom:6px;">Key Pedagogical Takeaways:</div>
+                <ul style="margin:0; padding-left:20px; font-size:13px; color:#1e3a8a;"><li style="margin-bottom:4px;">O(log n) time complexity by halving space.</li><li style="margin-bottom:4px;">Input array must be sorted.</li></ul>
+            </div>
+            
+</div>
+</body>
+</html>

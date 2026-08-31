@@ -1,0 +1,8 @@
+{
+  "topic": "Computer Science",
+  "concept": "Binary Search",
+  "level": "intermediate",
+  "language": "English",
+  "lesson_context": "Explain the divide-and-conquer search algorithm on a sorted array with low, mid, and high pointers.",
+  "include_secondary": true
+}

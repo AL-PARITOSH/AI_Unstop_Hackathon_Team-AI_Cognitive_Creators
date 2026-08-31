@@ -1,0 +1,8 @@
+{
+  "topic": "Physics",
+  "concept": "Ohm's Law",
+  "level": "intermediate",
+  "language": "English",
+  "lesson_context": "Explain the fundamental equation connecting voltage, current, and resistance in DC circuits.",
+  "include_secondary": true
+}
