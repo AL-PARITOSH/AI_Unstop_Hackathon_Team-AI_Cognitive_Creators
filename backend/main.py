@@ -563,13 +563,16 @@ def get_concept_media(session_id: str, concept_idx: int, db = Depends(get_db)):
         "simple_analogy": concept.simple_analogy,
         "summary_points": summary_pts,
         "audio_duration": duration,
-        "visual_caption": concept.visual.caption,
+        "visual_caption": getattr(concept.visual, 'caption', '') if hasattr(concept, 'visual') else '',
         "audio_url": audio_url,
         "visual_url": visual_url,
         "avatar_video_url": avatar_video_url,
         "default_avatar_url": default_avatar_url,
         "avatar_status": avatar_status,
-        "source_references": concept.source_references or [],
+        "source_references": [
+            ref.model_dump() if hasattr(ref, 'model_dump') else (ref if isinstance(ref, dict) else {"citation_text": str(ref), "document_name": "Document"})
+            for ref in (concept.source_references or [])
+        ],
         "teacher_name": "Prof. Aryan" if persona == "prof_aryan" else ("Coach Maya" if persona == "coach_maya" else "Dr. Sarah"),
         "teacher_persona": persona
     }

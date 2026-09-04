@@ -655,13 +655,50 @@ export default function InteractiveLessonTab({
                   )}
 
                   {mediaData?.source_references && mediaData.source_references.length > 0 && (
-                    <div className="pt-3 border-t border-slate-800/60 space-y-1">
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block">Grounding Passages:</span>
-                      {mediaData.source_references.map((ref, i) => (
-                        <p key={i} className="text-[11px] text-slate-400 italic bg-slate-900/40 p-2 rounded-lg border border-slate-800/50">
-                          📌 {ref}
-                        </p>
-                      ))}
+                    <div className="pt-3 border-t border-slate-800/60 space-y-2">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
+                        📚 Grounding Source Passages:
+                      </span>
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                        {mediaData.source_references.map((ref, i) => {
+                          if (typeof ref === 'string') {
+                            return (
+                              <p key={i} className="text-[11px] text-slate-300 italic bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                                📌 {ref}
+                              </p>
+                            );
+                          }
+                          const docName = ref?.document_name || 'Source Document';
+                          const pageNum = ref?.page_number;
+                          const slideNum = ref?.slide_number;
+                          const text = ref?.citation_text || ref?.section_heading || '';
+                          return (
+                            <div key={i} className="text-[11px] bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 space-y-1">
+                              <div className="flex items-center justify-between text-[10px] font-semibold text-indigo-300">
+                                <span className="truncate max-w-[200px]">📄 {docName}</span>
+                                {pageNum && (
+                                  <span className="bg-slate-800 px-1.5 py-0.5 rounded text-slate-400 font-mono text-[9px]">
+                                    Page {pageNum}
+                                  </span>
+                                )}
+                                {slideNum && (
+                                  <span className="bg-slate-800 px-1.5 py-0.5 rounded text-slate-400 font-mono text-[9px]">
+                                    Slide {slideNum}
+                                  </span>
+                                )}
+                              </div>
+                              {ref?.section_heading && (
+                                <p className="text-[10px] text-slate-400 font-medium">{ref.section_heading}</p>
+                              )}
+                              {text ? (
+                                <p className="text-slate-300 italic text-[11px] leading-relaxed">
+                                  "{text}"
+                                </p>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
