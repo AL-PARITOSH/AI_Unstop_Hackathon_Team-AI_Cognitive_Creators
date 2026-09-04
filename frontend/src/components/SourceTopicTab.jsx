@@ -37,7 +37,22 @@ export default function SourceTopicTab({ onPlanGenerated, setSourceMode }) {
       });
       onPlanGenerated(res.data.session_id, res.data.state);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to generate lesson plan.');
+      console.error("Plan generation error:", err);
+      let errorMsg = 'Failed to generate lesson plan.';
+      if (err.response?.data?.detail) {
+        if (typeof err.response.data.detail === 'string') {
+          errorMsg = err.response.data.detail;
+        } else if (Array.isArray(err.response.data.detail)) {
+          errorMsg = err.response.data.detail.map(d => d.msg || JSON.stringify(d)).join(', ');
+        } else {
+          errorMsg = JSON.stringify(err.response.data.detail);
+        }
+      } else if (err.response?.data?.message) {
+        errorMsg = err.response.data.message;
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -57,14 +72,15 @@ export default function SourceTopicTab({ onPlanGenerated, setSourceMode }) {
       }
 
       setUploadProgress('Extracting & indexing targeted chapter into vector database...');
-      const upRes = await axios.post('/api/documents/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      // Allow browser and axios to set the multipart boundary automatically
+      const upRes = await axios.post('/api/documents/upload', formData);
 
-      setUploadProgress(`Indexed ${upRes.data.chunk_count} chunks! Creating curriculum plan...`);
+      const chunkCount = upRes.data?.chunk_count || 0;
+      setUploadProgress(`Indexed ${chunkCount} chunks! Creating curriculum plan...`);
       setSourceMode('Document-grounded mode');
 
-      const planTopic = specificFocus.trim() || selectedFile.name;
+      const cleanFilename = selectedFile.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+      const planTopic = specificFocus.trim() || cleanFilename;
       const res = await axios.post('/api/lessons/plan', {
         topic: planTopic,
         source_mode: 'Document-grounded mode',
@@ -76,7 +92,22 @@ export default function SourceTopicTab({ onPlanGenerated, setSourceMode }) {
 
       onPlanGenerated(res.data.session_id, res.data.state);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to process document and generate plan.');
+      console.error("Document processing or plan error:", err);
+      let errorMsg = 'Failed to process document and generate plan.';
+      if (err.response?.data?.detail) {
+        if (typeof err.response.data.detail === 'string') {
+          errorMsg = err.response.data.detail;
+        } else if (Array.isArray(err.response.data.detail)) {
+          errorMsg = err.response.data.detail.map(d => d.msg || JSON.stringify(d)).join(', ');
+        } else {
+          errorMsg = JSON.stringify(err.response.data.detail);
+        }
+      } else if (err.response?.data?.message) {
+        errorMsg = err.response.data.message;
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      setError(errorMsg);
     } finally {
       setLoading(false);
       setUploadProgress(null);

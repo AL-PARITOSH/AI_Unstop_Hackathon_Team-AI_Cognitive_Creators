@@ -24,7 +24,7 @@ INPUT CONTEXT:
 </retrieved_source>
 
 CRITICAL DIRECTIVES:
-1. Grounding Policy: When in 'Document-grounded mode', you MUST strictly design the lesson plan using the exact subject matter and concepts present in <retrieved_source>. If the source introduces a specific chapter (e.g., "2 Binary Codes"), your lesson_title MUST be that exact chapter title (e.g., "Chapter 2: Binary Codes") and your concepts must teach the specific topics presented in that chapter (such as BCD, Gray Code, Excess-3, ASCII, and Parity codes). Never teach a previous chapter or drift to unrelated subjects.
+1. Grounding Policy: When in 'Document-grounded mode' and source text is present in <retrieved_source>, you MUST strictly design the lesson plan using the exact subject matter and concepts present in <retrieved_source>. If the source introduces a specific chapter (e.g., "2 Binary Codes"), your lesson_title MUST be that exact chapter title (e.g., "Chapter 2: Binary Codes") and your concepts must teach the specific topics presented in that chapter (such as BCD, Gray Code, Excess-3, ASCII, and Parity codes). Never teach a previous chapter or drift to unrelated subjects. If <retrieved_source> is empty, use authoritative domain knowledge for '{topic}' to build the structured lesson plan so learning never fails.
 2. If no source text is present or source mode is 'General knowledge topic mode', use authoritative domain knowledge but DO NOT fabricate document page/slide citations.
 3. Time Mode Adaptation:
    - If time_mode is '5m': Create exactly 2 high-yield, punchy concepts covering the core essence.

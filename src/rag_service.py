@@ -23,32 +23,59 @@ def get_chroma_collection():
     if _chroma_collection is None:
         try:
             import chromadb
+            # Ensure Chroma directory exists
+            os.makedirs(CHROMA_DB_DIR, exist_ok=True)
             _chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
             _chroma_collection = _chroma_client.get_or_create_collection(
                 name="ai_teacher_documents",
                 metadata={"hnsw:space": "cosine"}
             )
         except Exception as e:
-            logger.error(f"Failed to initialize ChromaDB: {e}")
-            _chroma_collection = None
+            logger.warning(f"Persistent ChromaDB initialization failed: {e}. Falling back to EphemeralClient.")
+            try:
+                import chromadb
+                _chroma_client = chromadb.EphemeralClient()
+                _chroma_collection = _chroma_client.get_or_create_collection(
+                    name="ai_teacher_documents",
+                    metadata={"hnsw:space": "cosine"}
+                )
+            except Exception as e2:
+                logger.error(f"Failed to initialize in-memory ChromaDB: {e2}")
+                _chroma_collection = None
     return _chroma_collection
 
 
 # Embeddings adapter
 _embedding_model = None
 
+def _is_lightweight_embeddings_enabled() -> bool:
+    """Detect if lightweight hash embeddings should be used (default on cloud/constrained environments)."""
+    env_val = os.getenv("USE_LIGHTWEIGHT_EMBEDDINGS", "").lower()
+    if env_val in ("false", "0", "no"):
+        return False
+    # If explicitly set to true OR running in container/serverless, default to lightweight
+    if env_val in ("true", "1", "yes"):
+        return True
+    # Default to lightweight in Docker/Render to prevent OOM kills and slow downloads
+    if os.path.exists("/.dockerenv") or os.getenv("RENDER") or os.getenv("PORT"):
+        return True
+    return False
+
 def get_embedding_vector(text: str) -> List[float]:
     global _embedding_model
     if _embedding_model is None:
-        try:
-            from sentence_transformers import SentenceTransformer
-            _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-        except Exception as e:
-            logger.warning(f"Using instant lightweight embedding fallback: {e}")
+        if _is_lightweight_embeddings_enabled():
             _embedding_model = "hash_fallback"
+        else:
+            try:
+                from sentence_transformers import SentenceTransformer
+                _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+            except Exception as e:
+                logger.warning(f"Using instant lightweight embedding fallback: {e}")
+                _embedding_model = "hash_fallback"
 
     if _embedding_model == "hash_fallback":
-        # Instant hash deterministic 384-dim float vector fallback
+        # Instant hash deterministic 384-dim float vector fallback (0 memory, instant execution)
         import hashlib
         vec = []
         for i in range(12):
@@ -67,12 +94,15 @@ def get_embedding_vectors_batch(texts: List[str]) -> List[List[float]]:
     """Generate embedding vectors for a list of texts in fast batch mode."""
     global _embedding_model
     if _embedding_model is None:
-        try:
-            from sentence_transformers import SentenceTransformer
-            _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-        except Exception as e:
-            logger.warning(f"Using instant lightweight embedding fallback: {e}")
+        if _is_lightweight_embeddings_enabled():
             _embedding_model = "hash_fallback"
+        else:
+            try:
+                from sentence_transformers import SentenceTransformer
+                _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+            except Exception as e:
+                logger.warning(f"Using instant lightweight embedding fallback: {e}")
+                _embedding_model = "hash_fallback"
 
     if _embedding_model == "hash_fallback":
         import hashlib
@@ -155,11 +185,41 @@ def parse_pdf(file_path: str, focus_topic: Optional[str] = None) -> List[Dict[st
                 # Include starting from found chapter, up to 30 pages
                 target_indices = list(range(found_start, min(total_pages, found_start + 30)))
             else:
-                # If chapter not directly found, take the first 30 pages
-                target_indices = list(range(min(total_pages, 30)))
+                # If chapter not directly found, skip front matter and pinpoint Chapter 1
+                start_p = 0
+                for idx in range(min(total_pages, 50)):
+                    txt_p = doc[idx].get_text("text").strip()
+                    lines = [l.strip() for l in txt_p.split('\n') if l.strip()]
+                    if not lines:
+                        continue
+                    lower_txt = txt_p.lower()
+                    if any(k in lower_txt[:400] for k in ["copyright", "contents", "table of contents", "preface", "dedication", "loving memory"]):
+                        continue
+                    if len(lines) >= 2 and (lines[0] in ("1", "Chapter 1", "CHAPTER 1", "1.") or lines[0].lower().startswith("chapter")):
+                        start_p = idx
+                        break
+                    if len(txt_p) > 600:
+                        start_p = idx
+                        break
+                target_indices = list(range(start_p, min(total_pages, start_p + 30)))
         elif total_pages > 35:
-            # Large textbook with no specific focus: take first 30 pages for curriculum overview
-            target_indices = list(range(min(total_pages, 30)))
+            # Large textbook with no specific focus: skip front matter (TOC/preface) and take first real chapter
+            start_p = 0
+            for idx in range(min(total_pages, 50)):
+                txt_p = doc[idx].get_text("text").strip()
+                lines = [l.strip() for l in txt_p.split('\n') if l.strip()]
+                if not lines:
+                    continue
+                lower_txt = txt_p.lower()
+                if any(k in lower_txt[:400] for k in ["copyright", "contents", "table of contents", "preface", "dedication", "loving memory"]):
+                    continue
+                if len(lines) >= 2 and (lines[0] in ("1", "Chapter 1", "CHAPTER 1", "1.") or lines[0].lower().startswith("chapter")):
+                    start_p = idx
+                    break
+                if len(txt_p) > 600:
+                    start_p = idx
+                    break
+            target_indices = list(range(start_p, min(total_pages, start_p + 30)))
         else:
             # Normal document (slides, notes): take all pages
             target_indices = list(range(total_pages))
@@ -369,12 +429,32 @@ def process_and_index_document(file_path: str, original_filename: str, focus_top
         # Fast batch embedding generation (runs in seconds)
         embeddings = get_embedding_vectors_batch(texts)
 
-        collection.add(
-            ids=ids,
-            embeddings=embeddings,
-            documents=texts,
-            metadatas=metadatas
-        )
+        try:
+            collection.add(
+                ids=ids,
+                embeddings=embeddings,
+                documents=texts,
+                metadatas=metadatas
+            )
+        except Exception as e:
+            logger.warning(f"Error adding vectors to primary ChromaDB collection: {e}. Trying in-memory fallback...")
+            try:
+                import chromadb
+                ephem_client = chromadb.EphemeralClient()
+                ephem_col = ephem_client.get_or_create_collection(
+                    name="ai_teacher_documents",
+                    metadata={"hnsw:space": "cosine"}
+                )
+                ephem_col.add(
+                    ids=ids,
+                    embeddings=embeddings,
+                    documents=texts,
+                    metadatas=metadatas
+                )
+                global _chroma_collection
+                _chroma_collection = ephem_col
+            except Exception as e2:
+                logger.error(f"Ephemeral ChromaDB fallback also encountered error: {e2}")
 
     return {
         "status": "success",
@@ -384,6 +464,60 @@ def process_and_index_document(file_path: str, original_filename: str, focus_top
         "section_count": len(sections),
         "chunk_count": len(chunks)
     }
+
+
+def get_direct_document_text(document_name: str, max_chars: int = 5000) -> Tuple[str, List[Dict[str, Any]]]:
+    """Direct disk fallback that extracts text from uploaded file if ChromaDB vector search is unavailable."""
+    from src.config import UPLOADS_DIR
+    if not document_name or not os.path.exists(UPLOADS_DIR):
+        return "", []
+
+    target_path = None
+    clean_target = os.path.basename(document_name).lower()
+    for fname in os.listdir(UPLOADS_DIR):
+        clean_fname = fname.lower()
+        if clean_target in clean_fname or clean_fname.endswith(clean_target):
+            target_path = os.path.join(UPLOADS_DIR, fname)
+            break
+
+    if not target_path or not os.path.isfile(target_path):
+        return "", []
+
+    try:
+        ext = os.path.splitext(target_path)[1].lower()
+        if ext == ".pdf":
+            sections = parse_pdf(target_path)
+        elif ext in [".docx", ".doc"]:
+            sections = parse_docx(target_path)
+        elif ext in [".pptx", ".ppt"]:
+            sections = parse_pptx(target_path)
+        elif ext in [".txt", ".md"]:
+            sections = parse_txt_md(target_path)
+        else:
+            sections = []
+
+        if not sections:
+            return "", []
+
+        chunks = chunk_sections(sections, max_chunks=8)
+        formatted_texts = []
+        retrieved_chunks = []
+        for chk in chunks:
+            pg = chk.get("page_number", -1)
+            citation = f"[{document_name}{f' — Page {pg}' if pg != -1 else ''}]"
+            retrieved_chunks.append({
+                "citation": citation,
+                "text": chk["text"],
+                "metadata": {"source_name": document_name, "page_number": pg},
+                "similarity": 0.95
+            })
+            formatted_texts.append(f"Citation: {citation}\nContent: {chk['text']}")
+
+        combined = "\n\n---\n\n".join(formatted_texts)
+        return combined[:max_chars], retrieved_chunks
+    except Exception as e:
+        logger.error(f"Direct document text fallback failed for {document_name}: {e}")
+        return "", []
 
 
 def query_rag_context(
@@ -398,6 +532,10 @@ def query_rag_context(
     """
     collection = get_chroma_collection()
     if not collection or collection.count() == 0:
+        if document_name:
+            fb_text, fb_chunks = get_direct_document_text(document_name)
+            if fb_text:
+                return fb_text, fb_chunks
         return "insufficient_source_evidence", []
 
     query_emb = get_embedding_vector(query)
@@ -474,6 +612,10 @@ def query_rag_context(
         formatted_texts.append(f"Citation: {citation}\nContent: {top_doc}")
 
     if not retrieved_chunks:
+        if document_name:
+            fb_text, fb_chunks = get_direct_document_text(document_name)
+            if fb_text:
+                return fb_text, fb_chunks
         return "insufficient_source_evidence", []
 
     combined_context = "\n\n---\n\n".join(formatted_texts)

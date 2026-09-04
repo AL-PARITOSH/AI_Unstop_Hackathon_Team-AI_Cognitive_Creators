@@ -12,4 +12,6 @@ services:
         generateValue: true
       - key: PORT
         value: 8000
+      - key: USE_LIGHTWEIGHT_EMBEDDINGS
+        value: "true"
 

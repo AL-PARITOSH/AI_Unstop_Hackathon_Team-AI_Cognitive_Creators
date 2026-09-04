@@ -45,6 +45,11 @@ class PedagogicalEngine:
                     min_relevance_score=0.01, 
                     document_name=self.state.document_name
                 )
+            
+            if retrieved_context == "insufficient_source_evidence":
+                retrieved_context = ""
+            
+            self.state.retrieved_context = retrieved_context
 
         time_mode = getattr(self.state.profile, 'time_mode', '20m')
         teacher_persona = getattr(self.state.profile, 'teacher_persona', 'dr_sarah')

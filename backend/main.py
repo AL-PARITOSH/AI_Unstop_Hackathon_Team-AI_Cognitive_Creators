@@ -344,28 +344,47 @@ async def upload_document(
     file: UploadFile = File(...),
     focus_topic: Optional[str] = Form(None)
 ):
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="No file uploaded")
-    
-    file_uuid = str(uuid.uuid4())[:8]
-    saved_filename = f"{file_uuid}_{file.filename}"
-    saved_path = os.path.join(UPLOADS_DIR, saved_filename)
+    try:
+        if not file or not file.filename:
+            raise HTTPException(status_code=400, detail="No file uploaded. Please select a valid PDF, DOCX, PPTX, or TXT file.")
+        
+        # Verify supported extensions
+        ext = os.path.splitext(file.filename)[1].lower()
+        if ext not in [".pdf", ".docx", ".doc", ".pptx", ".ppt", ".txt", ".md"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported file format '{ext}'. Supported formats: PDF, DOCX, PPTX, TXT, MD."
+            )
 
-    with open(saved_path, "wb") as buffer:
+        os.makedirs(UPLOADS_DIR, exist_ok=True)
+        file_uuid = str(uuid.uuid4())[:8]
+        safe_name = os.path.basename(file.filename)
+        saved_filename = f"{file_uuid}_{safe_name}"
+        saved_path = os.path.join(UPLOADS_DIR, saved_filename)
+
         content = await file.read()
-        buffer.write(content)
+        if not content:
+            raise HTTPException(status_code=400, detail="The uploaded file is empty (0 bytes).")
 
-    res = process_and_index_document(saved_path, file.filename, focus_topic=focus_topic)
-    if res.get("status") != "success":
-        raise HTTPException(status_code=400, detail=res.get("message", "Processing failed"))
+        with open(saved_path, "wb") as buffer:
+            buffer.write(content)
 
-    return {
-        "status": "success",
-        "file_uuid": file_uuid,
-        "filename": file.filename,
-        "chunk_count": res.get("chunk_count", 0),
-        "section_count": res.get("section_count", 0)
-    }
+        res = process_and_index_document(saved_path, safe_name, focus_topic=focus_topic)
+        if res.get("status") != "success":
+            raise HTTPException(status_code=400, detail=res.get("message", "Failed to process document text."))
+
+        return {
+            "status": "success",
+            "file_uuid": file_uuid,
+            "filename": safe_name,
+            "chunk_count": res.get("chunk_count", 0),
+            "section_count": res.get("section_count", 0)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Unexpected error during document upload: {e}")
+        raise HTTPException(status_code=500, detail=f"Document upload & processing error: {str(e)}")
 
 
 # --- Lesson Planning Endpoints ---
@@ -376,61 +395,83 @@ def create_lesson_plan(
     current_user: Optional[StudentProfile] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
-    p = current_user or get_or_create_default_profile(db)
-    time_mode = req.time_mode or "20m"
-    duration = 20
-    if time_mode == "5m":
-        duration = 5
-    elif time_mode == "60m":
-        duration = 60
-    elif time_mode == "7d":
-        duration = 120
+    # Verify Groq API Key configuration before initiating planning
+    if not is_groq_configured():
+        raise HTTPException(
+            status_code=400,
+            detail="GROQ_API_KEY is missing or invalid in the deployment environment. Please set GROQ_API_KEY in your cloud deployment environment variables."
+        )
 
-    persona = req.teacher_persona or getattr(p, 'teacher_persona', 'dr_sarah')
-    lang = req.language or p.language
+    try:
+        p = current_user or get_or_create_default_profile(db)
+        time_mode = req.time_mode or "20m"
+        duration = 20
+        if time_mode == "5m":
+            duration = 5
+        elif time_mode == "60m":
+            duration = 60
+        elif time_mode == "7d":
+            duration = 120
 
-    profile_schema = LearnerProfileSchema(
-        display_name=p.display_name,
-        education_level=p.education_level,
-        prior_knowledge=p.prior_knowledge,
-        learning_goal=p.learning_goal,
-        preferred_style=p.preferred_style,
-        language=lang,
-        voice_preference="male" if persona == "prof_aryan" else "female",
-        duration_minutes=duration,
-        time_mode=time_mode,
-        teacher_persona=persona
-    )
+        persona = req.teacher_persona or getattr(p, 'teacher_persona', 'dr_sarah')
+        lang = req.language or p.language
 
-    session_id = f"sess_{str(uuid.uuid4())[:8]}"
-    state = TeacherState(
-        session_id=session_id,
-        topic=req.topic,
-        source_mode=req.source_mode,
-        document_name=req.document_name,
-        profile=profile_schema
-    )
+        profile_schema = LearnerProfileSchema(
+            display_name=p.display_name,
+            education_level=p.education_level,
+            prior_knowledge=p.prior_knowledge,
+            learning_goal=p.learning_goal,
+            preferred_style=p.preferred_style,
+            language=lang,
+            voice_preference="male" if persona == "prof_aryan" else "female",
+            duration_minutes=duration,
+            time_mode=time_mode,
+            teacher_persona=persona
+        )
 
-    engine = PedagogicalEngine(state)
-    engine.plan_lesson()
+        session_id = f"sess_{str(uuid.uuid4())[:8]}"
+        state = TeacherState(
+            session_id=session_id,
+            topic=req.topic,
+            source_mode=req.source_mode,
+            document_name=req.document_name,
+            profile=profile_schema
+        )
 
-    ACTIVE_STATES[session_id] = state
+        engine = PedagogicalEngine(state)
+        engine.plan_lesson()
 
-    session_obj = LessonSession(
-        id=session_id,
-        student_id=p.id,
-        topic=state.topic,
-        language=state.profile.language,
-        plan_json=state.lesson_plan.model_dump_json() if state.lesson_plan else None,
-        current_state=state.current_state,
-        current_concept_index=state.current_concept_index
-    )
-    save_lesson_session(db, session_obj)
+        ACTIVE_STATES[session_id] = state
 
-    return {
-        "session_id": session_id,
-        "state": state.model_dump()
-    }
+        session_obj = LessonSession(
+            id=session_id,
+            student_id=p.id,
+            topic=state.topic,
+            language=state.profile.language,
+            plan_json=state.lesson_plan.model_dump_json() if state.lesson_plan else None,
+            current_state=state.current_state,
+            current_concept_index=state.current_concept_index
+        )
+        save_lesson_session(db, session_obj)
+
+        return {
+            "session_id": session_id,
+            "state": state.model_dump()
+        }
+    except HTTPException:
+        raise
+    except ValueError as ve:
+        logger.error(f"Value/Validation error in create_lesson_plan: {ve}")
+        err_str = str(ve)
+        if "GROQ_API_KEY" in err_str:
+            raise HTTPException(
+                status_code=400,
+                detail="GROQ_API_KEY is missing on the server. Please add your GROQ_API_KEY to deployment environment variables."
+            )
+        raise HTTPException(status_code=400, detail=f"Lesson plan error: {err_str}")
+    except Exception as e:
+        logger.exception(f"Unexpected error in create_lesson_plan: {e}")
+        raise HTTPException(status_code=500, detail=f"AI Lesson plan generation failed: {str(e)}")
 
 @app.get("/api/lessons/{session_id}")
 def get_lesson_state(session_id: str, db = Depends(get_db)):
