@@ -1,211 +1,176 @@
-# AI-Teacher Visual Explanation Engine
+# AI Teacher — Adaptive Multilingual Video Learning Assistant
 
-A standalone, deterministic, and modular Visual Explanation Engine built with Python and FastAPI for the AI Teacher hackathon.
-
-The engine analyzes educational topics and concepts, automatically selects the optimal visual representation type, generates structured visual specifications, and renders crisp vector and interactive outputs (SVG, KaTeX/LaTeX, Plotly, Pygments syntax highlighting, and responsive HTML).
+**AI Teacher** is a full-stack, hackathon-ready, multi-sensory educational assistant that transforms static learning materials (PDF, DOCX, PPTX, TXT, MD) or broad academic topics into interactive, personalized, voice-narrated video lessons.
 
 ---
 
-## ? Quick Start for Teammates (Fresh Clone)
+## 1. Hackathon Requirement Coverage Table
 
-### 1. Clone & Enter Directory
-```bash
-git clone <repo-url>
-cd AI-Teacher-Visual-Engine
-```
-
-### 2. (Optional) Create & Activate Virtual Environment
-```bash
-# Windows
-python -m venv venv
-venv\Scripts\activate
-
-# Linux / macOS
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### 3. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Run Automated Verification & Benchmarks
-```bash
-# Run pytest test suite (21 unit & integration tests)
-pytest -v
-
-# Run all 8 curriculum benchmark examples
-python examples/run_examples.py
-```
-
-### 5. Start the FastAPI Server
-```bash
-python run.py
-```
-- **Live API**: `http://127.0.0.1:8000`
-- **Interactive Swagger Docs**: `http://127.0.0.1:8000/docs`
-- **Healthcheck**: `http://127.0.0.1:8000/health`
+| Requirement | Code Module | Implementation Detail | Fallback / Degradation Mode |
+|---|---|---|---|
+| **1. Learning from Uploaded Materials** | `src/rag_service.py` | PyMuPDF, python-docx, python-pptx, semantic chunking, metadata indexing in ChromaDB | Topic-based teaching mode |
+| **2. Topic-Based Teaching** | `src/pedagogy_graph.py` | Groq LLM curriculum generation without fake RAG citations | General knowledge LLM prompting |
+| **3. AI Lesson Structure** | `src/schemas.py`, `src/prompts.py` | Logical concept breakdown, prerequisites, duration-aware time budget | Default 3-concept standard plan |
+| **4. Personalized Teaching** | `src/schemas.py`, `src/database.py` | `StudentProfile` (class level, prior knowledge, goal, teaching style, duration) | Default high school beginner profile |
+| **5. Human-Like Teaching** | `src/pedagogy_graph.py` | Progressive flow: Understand → Explain → Demonstrate → Checkpoint → Remediation → Assessment | Linear concept progression |
+| **6. Video-Based AI Presentation** | `src/compositor.py` | 1280x720 split video (65% visual whiteboard, 35% teacher avatar, burned SRT subtitles) | Audio + Animated Visual Panel Card |
+| **7. AI Voice** | `src/tts_service.py` | Edge-TTS with `hi-IN-SwaraNeural`, `hi-IN-MadhurNeural`, `en-IN-NeerjaNeural`, `en-IN-PrabhatNeural` | HTML5 Audio synthesis / Text script |
+| **8. Human-Like Avatar** | `src/avatar_service.py` | SadTalker local CLI wrapper (`inference.py --driven_audio ... --source_image ...`) | High-res Teacher Avatar Card |
+| **9. Multilingual Capability** | `src/prompts.py`, `src/tts_service.py` | English, Hindi (Devanagari), Hinglish script generation and TTS mapping | English default |
+| **10. Student Questioning & Assessment** | `src/schemas.py`, `src/pedagogy_graph.py` | Checkpoint questions per concept + Final comprehensive quiz (MCQ, short answer, reasoning) | Standard MCQ quiz |
+| **11. Adaptive Remediation** | `src/pedagogy_graph.py` | Misconception identification, alternate water-flow analogies, max 2 remediation retries | Direct answer feedback |
+| **12. Working Application** | `app.py`, `src/ui_components.py` | Complete interactive Streamlit UI with state preservation across tabs & restarts | Full local execution |
+| **13. RAG Grounding & Citations** | `src/rag_service.py` | Exact `[Document — Page N]` citations, `<retrieved_source>` prompt boundary protection | `insufficient_source_evidence` fallback |
+| **14. Speech-to-Text Answer Input** | `src/stt_service.py` | Groq Whisper `st.audio_input` audio transcription | Local `faster-whisper` / Typed text |
+| **15. Subject-Aware Visuals** | `src/visual_service.py` | Math formulas, physics circuits/plots, CS code cards, history timelines, biology structure diagrams | Matplotlib concept card |
+| **16. Observability** | `src/llm_service.py` | LangSmith auto-tracing when `LANGSMITH_API_KEY` is present | Disabled silently without error |
+| **17. Demo Mode** | `src/demo_seed.py` | Pre-loaded Ohm's Law scenario with intentional misconception test and instant simulation | Live full pipeline |
 
 ---
 
-## ?? What Files Are in This Repository?
+## 2. Mermaid Architecture Diagram
 
-Every file in this repository is completely self-contained, clean, and safe to share with your hackathon team:
+```mermaid
+flowchart TD
+    User([Learner / Student]) -->|Interacts| UI[Streamlit Frontend app.py]
+    
+    subgraph Core Engine
+        UI --> Profile[Student Profile Manager]
+        UI --> RAG[RAG & Document Processor]
+        UI --> Graph[LangGraph Pedagogical Workflow]
+    end
 
-```
-AI-Teacher-Visual-Engine/
-??? app/
-?   ??? config.py                   # Central settings, URLs, static directory paths
-?   ??? main.py                     # FastAPI application setup, CORS, static mounts
-?   ??? models/
-?   ?   ??? request.py              # VisualRequest (topic, concept, level, language, context, etc.)
-?   ?   ??? response.py             # VisualResponse, VisualItem, SelectorMetadata
-?   ?   ??? specs/                  # Strongly-typed schemas for all 7 visual types
-?   ??? selector/
-?   ?   ??? base.py                 # Abstract BaseVisualSelector interface & SelectorResult
-?   ?   ??? taxonomy.py             # Domain keywords & multi-visual mappings
-?   ?   ??? rules.py                # Deterministic pattern matching & scoring engine
-?   ?   ??? rule_selector.py        # RuleBasedVisualSelector with confidence & safe fallback
-?   ?   ??? llm_selector.py         # Pluggable LLM interface extension point
-?   ??? generators/
-?   ?   ??? base.py                 # Abstract BaseSpecGenerator interface
-?   ?   ??? knowledge_base.py       # High-fidelity curriculum specs for standard topics
-?   ?   ??? dynamic_builder.py      # Algorithmic generator for arbitrary concepts
-?   ?   ??? registry.py             # Central spec generator dispatcher
-?   ??? renderers/
-?   ?   ??? base.py                 # Abstract BaseRenderer & RenderedOutput
-?   ?   ??? diagram_renderer.py     # Pure vector SVG/HTML labelled diagram renderer
-?   ?   ??? flowchart_renderer.py   # SVG Flowchart & decision tree renderer (with side-margin routing)
-?   ?   ??? formula_renderer.py     # KaTeX / MathJax compatible LaTeX card renderer
-?   ?   ??? graph_renderer.py       # Plotly interactive coordinate graph renderer
-?   ?   ??? timeline_renderer.py    # SVG Chronological milestone timeline renderer
-?   ?   ??? code_renderer.py        # Pygments code highlighting + execution trace stepper
-?   ?   ??? architecture_renderer.py# SVG Multi-tier system architecture renderer
-?   ?   ??? registry.py             # Central renderer registry
-?   ??? services/
-?   ?   ??? storage_service.py      # Saves .html/.svg artifacts & generates embed URLs
-?   ?   ??? engine_service.py       # Orchestrates selector -> generator -> renderer pipeline
-?   ??? api/v1/
-?       ??? routes.py               # POST /generate-visual, POST /select-type, GET /visual-types, GET /examples
-?       ??? render_views.py         # GET /visuals/{visual_id} standalone iframe viewer
-??? examples/                       # 8 Benchmark JSON payloads & test runner (run_examples.py)
-??? static/                         # Generated standalone HTML/SVG visual artifacts
-??? tests/                          # Automated Pytest suite (21 passing tests)
-??? pytest.ini                      # Pytest configuration
-??? conftest.py                     # Test path bootstrap
-??? requirements.txt                # Lightweight, pinned dependencies
-??? run.py                          # Server launch script
-??? README.md                       # Complete documentation & backend integration guide
+    subgraph RAG Infrastructure
+        RAG -->|Parses PDF/DOCX/PPTX| PyMuPDF[PyMuPDF / docx / pptx]
+        PyMuPDF -->|Semantic Chunks| Embedder[Multilingual SentenceTransformers]
+        Embedder -->|Stores Chunks & Vectors| Chroma[(Local ChromaDB)]
+    end
+
+    subgraph Pedagogical Brain
+        Graph -->|JSON Prompting| GroqLLM[Groq LLM: llama-3.3-70b-versatile]
+        GroqLLM -->|Optional Tracing| LangSmith[LangSmith Observability]
+        Graph -->|Stores Sessions & Scores| DB[(SQLite Database)]
+    end
+
+    subgraph Media Generation
+        Graph -->|Generates Audio| EdgeTTS[Edge-TTS Keyless Narration]
+        Graph -->|Transcribes Voice| GroqWhisper[Groq Whisper STT]
+        Graph -->|Generates Diagrams| Visuals[Kroki Mermaid / Pollinations / Matplotlib]
+        Graph -->|Animates Avatar| SadTalker[SadTalker Local GPU Service]
+        Visuals & EdgeTTS & SadTalker --> Compositor[FFmpeg Video Compositor]
+    end
+
+    Compositor -->|Output MP4 & Audio-Visual Cards| UI
 ```
 
 ---
 
-## ?? Supported Visual Modalities
+## 3. API Key & Credential Matrix
 
-| Visual Type | Description | Render Format |
-|---|---|---|
-| `formula` | LaTeX equations, KaTeX math cards, variable legends with SI units, derivation steps | KaTeX / MathJax HTML |
-| `diagram` | Vector anatomical, physical, circuit, and structural diagrams with callouts and badges | Clean Responsive SVG / HTML |
-| `flowchart` | Algorithmic decision trees, conditions, branch labels, and iteration loops | Clean Responsive SVG / HTML |
-| `graph` | Plotly interactive function curves, coordinate grids, and annotated extreme points | Plotly JSON + Interactive HTML |
-| `timeline` | Chronological event pipeline with milestone nodes, dates, tags, and category chips | Clean Responsive SVG / HTML |
-| `code_execution` | Pygments syntax-highlighted code + line-by-line variable memory trace table | Pygments HTML + State Table |
-| `architecture` | Multi-tier system architectures, ML pipelines, and directed data communication flows | Clean Responsive SVG / HTML |
-
----
-
-## ?? API Reference & Integration
-
-### `POST /generate-visual`
-The primary endpoint to call from another backend (chatbot, orchestrator, or frontend).
-
-#### Request Body
-```json
-{
-  "topic": "Physics",
-  "concept": "Ohm's Law",
-  "level": "intermediate",
-  "language": "English",
-  "lesson_context": "Explain the relationship between voltage, current, and resistance.",
-  "include_secondary": true,
-  "visual_type_override": null
-}
-```
-
-#### Response Body
-```json
-{
-  "visual_type": "formula",
-  "title": "Ohm's Law (V = I ? R)",
-  "explanation": "Current is directly proportional to voltage and inversely proportional to resistance.",
-  "selector_metadata": {
-    "confidence": 0.98,
-    "reason": "Ohm's Law expresses the direct mathematical relation V = I ? R alongside circuit schematics.",
-    "suggested_visual_types": ["formula", "diagram", "flowchart", "graph", "timeline", "code_execution", "architecture"]
-  },
-  "visual_data": {
-    "format": "katex",
-    "latex": "V = I \cdot R",
-    "rendered_html": "<div class="visual-card formula-card">...</div>",
-    "spec": { ... }
-  },
-  "visual_url": "http://127.0.0.1:8000/visuals/vis_ohm_s_law_formula_0b333f.html",
-  "secondary_visuals": [
-    {
-      "visual_type": "diagram",
-      "title": "Ohm's Law DC Circuit & Triangle",
-      "explanation": "Schematic of a simple closed DC circuit with voltage source, current loop, and resistor.",
-      "visual_data": { "format": "svg", "raw_svg": "<svg>...</svg>", "rendered_html": "..." },
-      "visual_url": "http://127.0.0.1:8000/visuals/vis_ohm_s_law_diagram_6e89cf.html"
-    }
-  ]
-}
-```
+| Key / Tool Name | Mandatory / Optional | Purpose | Free Tier / Keyless Status |
+|---|---|---|---|
+| `GROQ_API_KEY` | **Required** | LLM pedagogical reasoning (`llama-3.3-70b-versatile`) & Whisper STT | Free Developer Tier Available |
+| `LANGSMITH_API_KEY` | Optional | LLM tracing and observability | Free Tier Available (App works without key) |
+| `POLLINATIONS_API_KEY` | Optional | Educational image illustrations | Keyless Public API / Optional Key |
+| `Edge-TTS` | **Built-in** | Multilingual audio narration | 100% Free Keyless Service |
+| `ChromaDB` | **Built-in** | Local vector store for document RAG | 100% Free Local Open Source |
+| `SQLite` | **Built-in** | Persistent student profile and session history | 100% Free Local Database |
+| `FFmpeg` | Optional System Tool | Video composition (Left visual, right avatar, subtitles) | 100% Free Open Source CLI |
 
 ---
 
-### Backend Integration Examples
+## 4. Setup & Running Instructions
 
-#### Node.js (Axios)
-```javascript
-const axios = require('axios');
+### Windows / macOS / Linux
 
-async function getVisual(topic, concept, context) {
-  const res = await axios.post('http://127.0.0.1:8000/generate-visual', {
-    topic,
-    concept,
-    lesson_context: context,
-    include_secondary: true
-  });
-  return {
-    primaryUrl: res.data.visual_url,
-    secondaryUrls: res.data.secondary_visuals.map(s => s.visual_url),
-    explanation: res.data.explanation
-  };
-}
-```
+1. **Clone & Environment Setup:**
+   ```bash
+   git clone <repository_url>
+   cd final
+   python -m venv venv
+   # On Windows:
+   venv\Scripts\activate
+   # On macOS/Linux:
+   source venv/bin/activate
+   ```
 
-#### Python (Requests / HTTPX)
-```python
-import requests
+2. **Install Dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-def get_visual(topic: str, concept: str) -> dict:
-    resp = requests.post(
-        "http://127.0.0.1:8000/generate-visual",
-        json={"topic": topic, "concept": concept, "include_secondary": True}
-    )
-    return resp.json()
-```
+3. **Configure Secrets & Environment:**
+   Ensure `.streamlit/secrets.toml` or `.env` contains your keys:
+   ```toml
+   GROQ_API_KEY = "gsk_..."
+   GROQ_LLM_MODEL = "llama-3.3-70b-versatile"
+   LANGSMITH_API_KEY = "lsv2_pt_..."
+   ```
 
-#### Frontend Iframe Embed
-```html
-<iframe
-  src="http://127.0.0.1:8000/visuals/vis_photosynthesis_diagram_6dc6b8.html"
-  width="100%"
-  height="520px"
-  frameborder="0"
-  style="border-radius: 12px; border: 1px solid #e2e8f0;">
-</iframe>
-```
-# AI_Unstop_Hackathon_Team-AI_Cognitive_Creators
+4. **Launch Application:**
+   ```bash
+   streamlit run app.py
+   ```
+   Open `http://localhost:8501` in your browser.
+
+5. **Run Unit Tests:**
+   ```bash
+   python -m unittest tests/test_all.py
+   ```
+
+---
+
+## 5. Hackathon 3–7 Minute Demo Script
+
+1. **Step 1: Introduction & System Status (0:00 - 0:45)**
+   - Open Streamlit app.
+   - Show the visible **Stepper Bar** (`Profile -> Source -> Lesson Plan -> Learn -> Checkpoints -> Assessment -> Report`).
+   - Expand `System Status` in sidebar to demonstrate active Groq LLM, Edge TTS, and ChromaDB.
+
+2. **Step 2: Onboarding & Source Input (0:45 - 1:45)**
+   - Select **Learner Profile**: Set language to `Hinglish` and duration to `20 Mins`.
+   - Select **Source & Topic**: Click `⚡ Launch Ohm's Law Demo Scenario` or upload a PDF chapter.
+
+3. **Step 3: Interactive Lesson & Voice/Visual Presentation (1:45 - 3:30)**
+   - View Concept 1: *Voltage, Current, and Resistance Fundamentals*.
+   - Listen to the **Edge TTS audio narration** in Hinglish.
+   - Inspect the **Matplotlib coordinate graph** showing $V = I \times R$.
+   - Open the **Retrieved Document Sources & Citations** expander showing exact `[Document Name — Page N]` citations.
+
+4. **Step 4: Checkpoint Question & Misconception Remediation (3:30 - 5:00)**
+   - Navigate to **Checkpoints**.
+   - Read the question: *"If voltage V remains constant and resistance R increases, what happens to current I?"*
+   - Click `⚡ Test Incorrect Answer Misconception Scenario` (submits *"Current increases."*).
+   - Observe the **AI Diagnostic Evaluator**:
+     - Detects misconception: *"Confusing inverse proportionality"*.
+     - Provides empathetic feedback and triggers **Adaptive Remediation**.
+     - Explains the **Water Pipe Analogy** and renders a NEW formula visual card.
+     - Asks a targeted re-check question.
+
+5. **Step 5: Assessment, Learning Report, & Next Topic (5:00 - 6:30)**
+   - Navigate to **Assessment & Report**.
+   - Complete the final quiz.
+   - View the generated **Learning Report**: Score breakdown, strong areas, weak areas, and 7-day revision schedule.
+   - Click `📥 Download Learning Report (Markdown)`.
+
+---
+
+## 6. Pre-Demo Audit Checklist
+
+- [x] Topic can be taught without an uploaded file (General Topic Mode)
+- [x] PDF, DOCX, PPTX, TXT, and MD can be ingested and chunked
+- [x] ChromaDB vector retrieval displays exact document page citations
+- [x] Edge-TTS generates clear audio narration for Hindi, Hinglish, and English
+- [x] Subject-aware visual generated for each concept (diagram, formula, graph, code)
+- [x] Checkpoint questions detect student misconceptions and trigger finite remediation
+- [x] Remediation retries capped at max 2 per concept to prevent infinite loops
+- [x] Full persistent storage in SQLite supporting `Resume Last Lesson`
+- [x] System degrades gracefully if optional keys or heavy tools (SadTalker/FFmpeg) are missing
+- [x] Unit test suite passes cleanly (`tests/test_all.py`)
+
+---
+
+## 7. Responsible AI & Privacy Note
+
+- **Untrusted Input Protection**: Uploaded documents are wrapped in prompt boundaries (`<retrieved_source>`) and treated strictly as passive academic reference data. Embedded instructions within documents are ignored.
+- **Avatar Ethics**: AI avatar representations use fictional, generated, or user-authorized assets. Real-person impersonation without explicit authorization is strictly prohibited.

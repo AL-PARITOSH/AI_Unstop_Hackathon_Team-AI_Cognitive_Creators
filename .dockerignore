@@ -1,0 +1,15 @@
+node_modules
+frontend/node_modules
+frontend/dist
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+.env.local
+media_cache/*
+!media_cache/teacher_avatar_default.png
+uploads/*
+.gemini
+*.log
+

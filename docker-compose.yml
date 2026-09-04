@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  ai-teacher:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./media_cache:/app/media_cache
+      - ./uploads:/app/uploads
+      - ./ai_teacher.db:/app/ai_teacher.db
+    restart: unless-stopped
