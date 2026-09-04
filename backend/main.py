@@ -553,7 +553,7 @@ def get_concept_media(session_id: str, concept_idx: int, db = Depends(get_db)):
     # Default fallback teacher portrait
     default_avatar_url = f"/media_cache/{os.path.basename(avatar_img)}"
 
-    summary_pts = getattr(concept, 'whiteboard_bullet_points', getattr(concept, 'whiteboard_summary', []))
+    summary_pts = getattr(concept, 'whiteboard_bullet_points', None) or getattr(concept, 'whiteboard_summary', None) or getattr(concept, 'key_points', [])
 
     return {
         "concept_index": concept_idx,
@@ -562,6 +562,7 @@ def get_concept_media(session_id: str, concept_idx: int, db = Depends(get_db)):
         "spoken_script": concept.spoken_script,
         "simple_analogy": concept.simple_analogy,
         "summary_points": summary_pts,
+        "audio_duration": duration,
         "visual_caption": concept.visual.caption,
         "audio_url": audio_url,
         "visual_url": visual_url,

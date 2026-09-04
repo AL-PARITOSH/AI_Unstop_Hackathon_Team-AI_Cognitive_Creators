@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Volume2, 
   RotateCcw, 
@@ -18,7 +18,11 @@ import {
   MicOff,
   Layers,
   FileDown,
-  Languages
+  Languages,
+  Play,
+  Pause,
+  CheckCircle2,
+  BookmarkCheck
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -34,7 +38,14 @@ export default function InteractiveLessonTab({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAnalogy, setShowAnalogy] = useState(false);
-  const [showScript, setShowScript] = useState(false);
+  const [showScript, setShowScript] = useState(true); // Directly visible by default
+
+  // Live Narration Synchronization & Highlighting State
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [activeSentenceIndex, setActiveSentenceIndex] = useState(0);
+  const [activePointIndex, setActivePointIndex] = useState(0);
 
   // In-Lesson Follow-Up Doubt Solver State (Task 2 & Section 11)
   const [showDoubtDrawer, setShowDoubtDrawer] = useState(false);
@@ -50,6 +61,8 @@ export default function InteractiveLessonTab({
   const [downloadingNotes, setDownloadingNotes] = useState(false);
 
   const videoRef = useRef(null);
+  const audioRef = useRef(null);
+  const activeSentenceRef = useRef(null);
   const doubtAudioRef = useRef(null);
 
   const concept = lessonPlan?.concepts?.[conceptIndex];
@@ -81,6 +94,138 @@ export default function InteractiveLessonTab({
       isMounted = false;
     };
   }, [sessionId, conceptIndex]);
+
+  // Reset playback and tracking state on concept change
+  useEffect(() => {
+    setCurrentTime(0);
+    setActiveSentenceIndex(0);
+    setActivePointIndex(0);
+    setIsPlaying(false);
+  }, [conceptIndex]);
+
+  // Update total duration whenever mediaData arrives
+  useEffect(() => {
+    if (mediaData?.audio_duration) {
+      setDuration(mediaData.audio_duration);
+    }
+  }, [mediaData]);
+
+  // Format seconds to mm:ss
+  const formatTime = (seconds) => {
+    if (isNaN(seconds) || seconds <= 0) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  // Split spoken script into natural sentences and calculate cumulative duration ratios
+  const sentences = useMemo(() => {
+    const script = mediaData?.spoken_script || concept?.spoken_script || '';
+    if (!script.trim()) return [];
+    // Split sentences on full stops, question marks, exclamation marks, devanagari danda, or newlines
+    const raw = script.match(/[^.!?।\n]+[.!?।]?/g) || [script];
+    const cleanList = raw.map(s => s.trim()).filter(Boolean);
+    if (cleanList.length === 0) return [{ index: 0, text: script, startRatio: 0, endRatio: 1 }];
+
+    const totalChars = cleanList.reduce((sum, s) => sum + s.length, 0);
+    let cumChars = 0;
+    return cleanList.map((text, idx) => {
+      const startRatio = cumChars / totalChars;
+      cumChars += text.length;
+      const endRatio = cumChars / totalChars;
+      return {
+        index: idx,
+        text,
+        startRatio,
+        endRatio
+      };
+    });
+  }, [mediaData?.spoken_script, concept?.spoken_script]);
+
+  // Extract whiteboard summary points and calculate timing ratios
+  const summaryPoints = useMemo(() => {
+    const pts = mediaData?.summary_points || concept?.whiteboard_bullet_points || concept?.key_points || [];
+    if (!Array.isArray(pts) || pts.length === 0) return [];
+    return pts.map((pt, idx) => {
+      const startRatio = idx / pts.length;
+      const endRatio = (idx + 1) / pts.length;
+      return {
+        index: idx,
+        text: pt,
+        startRatio,
+        endRatio
+      };
+    });
+  }, [mediaData?.summary_points, concept?.whiteboard_bullet_points, concept?.key_points]);
+
+  // Real-time time update handler on audio or video element
+  const handleTimeUpdate = (e) => {
+    const media = e.target;
+    const cur = media.currentTime || 0;
+    const dur = media.duration || duration || mediaData?.audio_duration || 1;
+    setCurrentTime(cur);
+    if (media.duration && !isNaN(media.duration) && media.duration > 0) {
+      setDuration(media.duration);
+    }
+
+    const progress = dur > 0 ? Math.min(1, Math.max(0, cur / dur)) : 0;
+
+    // Synchronize active spoken sentence
+    if (sentences.length > 0) {
+      const sIdx = sentences.findIndex(s => progress >= s.startRatio && progress < s.endRatio);
+      setActiveSentenceIndex(sIdx !== -1 ? sIdx : (progress >= 0.95 ? sentences.length - 1 : 0));
+    }
+
+    // Synchronize active whiteboard summary bullet point
+    if (summaryPoints.length > 0) {
+      const pIdx = summaryPoints.findIndex(p => progress >= p.startRatio && progress < p.endRatio);
+      setActivePointIndex(pIdx !== -1 ? pIdx : (progress >= 0.95 ? summaryPoints.length - 1 : 0));
+    }
+  };
+
+  // Seek audio/video to exact sentence start
+  const seekToSentence = (sent) => {
+    const media = videoRef.current || audioRef.current;
+    if (media && duration > 0) {
+      const target = sent.startRatio * duration;
+      media.currentTime = target;
+      media.play().catch(() => {});
+      setIsPlaying(true);
+      setActiveSentenceIndex(sent.index);
+    }
+  };
+
+  // Seek audio/video to exact whiteboard bullet point start
+  const seekToPoint = (pt) => {
+    const media = videoRef.current || audioRef.current;
+    if (media && duration > 0) {
+      const target = pt.startRatio * duration;
+      media.currentTime = target;
+      media.play().catch(() => {});
+      setIsPlaying(true);
+      setActivePointIndex(pt.index);
+    }
+  };
+
+  // Play / Pause toggle
+  const togglePlayPause = () => {
+    const media = videoRef.current || audioRef.current;
+    if (!media) return;
+    if (isPlaying) {
+      media.pause();
+      setIsPlaying(false);
+    } else {
+      media.play().catch(() => {});
+      setIsPlaying(true);
+    }
+  };
+
+  // Auto-scroll active sentence into view smoothly
+  useEffect(() => {
+    if (activeSentenceRef.current && isPlaying) {
+      activeSentenceRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [activeSentenceIndex, isPlaying]);
 
   // Voice speech-to-text recognition for asking doubts
   const toggleDoubtVoice = () => {
@@ -309,6 +454,13 @@ export default function InteractiveLessonTab({
                     controls
                     autoPlay
                     playsInline
+                    onTimeUpdate={handleTimeUpdate}
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                    onEnded={() => setIsPlaying(false)}
+                    onLoadedMetadata={(e) => {
+                      if (e.target.duration) setDuration(e.target.duration);
+                    }}
                     className="w-full rounded-xl shadow-2xl border border-indigo-500/20 bg-slate-900 aspect-square object-cover"
                   />
                 ) : (
@@ -320,9 +472,18 @@ export default function InteractiveLessonTab({
                     />
                     {mediaData?.audio_url && (
                       <audio
+                        ref={audioRef}
+                        key={mediaData.audio_url}
                         controls
                         autoPlay
                         src={mediaData.audio_url}
+                        onTimeUpdate={handleTimeUpdate}
+                        onPlay={() => setIsPlaying(true)}
+                        onPause={() => setIsPlaying(false)}
+                        onEnded={() => setIsPlaying(false)}
+                        onLoadedMetadata={(e) => {
+                          if (e.target.duration) setDuration(e.target.duration);
+                        }}
                         className="w-full"
                       />
                     )}
@@ -353,47 +514,187 @@ export default function InteractiveLessonTab({
             </div>
           )}
 
-          {/* Spoken Script & Whiteboard Summary Expander */}
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden">
-            <button
-              onClick={() => setShowScript(!showScript)}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-800/40 transition"
-            >
-              <div className="flex items-center space-x-2 text-sm font-semibold text-white">
-                <FileText className="w-4 h-4 text-indigo-400" />
-                <span>📄 View Spoken Script & Whiteboard Summary</span>
-              </div>
-              {showScript ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-            </button>
-
-            {showScript && (
-              <div className="p-5 border-t border-slate-800/80 space-y-4 text-xs sm:text-sm text-slate-300 bg-slate-950/40">
+          {/* Direct Synchronized Live Explanation Studio & Whiteboard Highlighting */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl space-y-0 animate-fadeIn">
+            {/* Header with Live Sync Controls */}
+            <div className="p-4 bg-slate-950/80 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center space-x-3">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${isPlaying ? 'bg-amber-500/20 text-amber-400 ring-2 ring-amber-500/40 animate-pulse' : 'bg-indigo-500/20 text-indigo-400'}`}>
+                  {isPlaying ? <Volume2 className="w-5 h-5 animate-bounce" /> : <FileText className="w-5 h-5" />}
+                </div>
                 <div>
-                  <strong className="text-white block mb-1">Spoken Script ({mediaData?.difficulty || concept.difficulty} level):</strong>
-                  <p className="text-slate-300 leading-relaxed bg-slate-900/80 p-4 rounded-xl border border-slate-800">
-                    {mediaData?.spoken_script || concept.spoken_script}
-                  </p>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-sm font-bold text-white">Live Explanation & Whiteboard Synchronizer</h3>
+                    {isPlaying ? (
+                      <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
+                        <span>EXPLAINING NOW</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
+                        <span>Click audio to track</span>
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-400">Highlights the active spoken sentence & whiteboard concept in real time as the teacher explains.</p>
+                </div>
+              </div>
+
+              {/* Playback time, quick controls & toggle */}
+              <div className="flex items-center space-x-2.5">
+                <div className="flex items-center space-x-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 text-xs text-slate-300 shadow-inner">
+                  <button
+                    type="button"
+                    onClick={togglePlayPause}
+                    className="text-indigo-400 hover:text-white transition p-0.5 flex items-center justify-center"
+                    title={isPlaying ? "Pause Narration" : "Play Narration"}
+                  >
+                    {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+                  </button>
+                  <span className="font-mono text-[11px] text-amber-300 font-semibold">{formatTime(currentTime)}</span>
+                  <span className="text-slate-600 font-mono">/</span>
+                  <span className="font-mono text-[11px] text-slate-400">{formatTime(duration)}</span>
                 </div>
 
-                {mediaData?.summary_points && mediaData.summary_points.length > 0 && (
-                  <div>
-                    <strong className="text-white block mb-2">Key Concept Bullet Points:</strong>
-                    <ul className="space-y-1.5 list-disc list-inside text-slate-300">
-                      {mediaData.summary_points.map((pt, i) => (
-                        <li key={i}>{pt}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setShowScript(!showScript)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center space-x-1.5 border border-slate-700"
+                >
+                  {showScript ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  <span>{showScript ? 'Hide View' : 'Direct View'}</span>
+                </button>
+              </div>
+            </div>
 
-                {mediaData?.source_references && mediaData.source_references.length > 0 && (
-                  <div className="pt-2 border-t border-slate-800">
-                    <strong className="text-slate-400 block mb-1">Grounding Source Passages:</strong>
-                    {mediaData.source_references.map((ref, i) => (
-                      <p key={i} className="text-xs text-slate-400 italic">• {ref}</p>
-                    ))}
+            {/* Audio/Video Progress bar indicator */}
+            <div className="w-full bg-slate-950 h-1.5 relative overflow-hidden">
+              <div 
+                className="bg-gradient-to-r from-indigo-500 via-purple-500 to-amber-400 h-full transition-all duration-150"
+                style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+              />
+            </div>
+
+            {showScript && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 divide-y lg:divide-y-0 lg:divide-x divide-slate-800/80 bg-slate-950/40">
+                {/* Left 5 Cols: Whiteboard Summary (Live Topic Tracking) */}
+                <div className="lg:col-span-5 p-4 sm:p-5 space-y-3.5">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-800/60">
+                    <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-indigo-400">
+                      <span>🎨 Whiteboard Summary</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
+                      {summaryPoints.length} Key Takeaway{summaryPoints.length !== 1 ? 's' : ''}
+                    </span>
                   </div>
-                )}
+
+                  {summaryPoints.length > 0 ? (
+                    <div className="space-y-2.5">
+                      {summaryPoints.map((pt, idx) => {
+                        const isActive = idx === activePointIndex && (isPlaying || currentTime > 0);
+                        const isCovered = idx < activePointIndex;
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => seekToPoint(pt)}
+                            className={`p-3 rounded-xl border transition-all duration-300 cursor-pointer select-none text-xs sm:text-sm ${
+                              isActive
+                                ? 'bg-gradient-to-r from-indigo-500/25 via-indigo-500/10 to-transparent border-l-4 border-indigo-400 text-white font-semibold shadow-lg shadow-indigo-500/15 ring-1 ring-indigo-400/40 translate-x-1'
+                                : isCovered
+                                ? 'bg-slate-900/60 border-emerald-500/30 text-slate-300 hover:bg-slate-800/60'
+                                : 'bg-slate-900/30 border-slate-800/60 text-slate-500 hover:bg-slate-800/40 hover:text-slate-400'
+                            }`}
+                          >
+                            <div className="flex items-start space-x-2.5">
+                              <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold mt-0.5 ${
+                                isActive
+                                  ? 'bg-indigo-500 text-white shadow-md shadow-indigo-500/50 animate-pulse ring-2 ring-indigo-300'
+                                  : isCovered
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                  : 'bg-slate-800 text-slate-500 border border-slate-700'
+                              }`}>
+                                {isCovered ? '✓' : idx + 1}
+                              </span>
+
+                              <div className="flex-1 space-y-1">
+                                <p className="leading-snug">{pt.text}</p>
+                                {isActive && (
+                                  <div className="inline-flex items-center space-x-1 text-[10px] text-indigo-300 font-bold bg-indigo-500/20 px-2 py-0.5 rounded border border-indigo-400/30 animate-fadeIn">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
+                                    <span>⚡ Now Explaining</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 italic">No summary points generated for this concept.</p>
+                  )}
+
+                  {mediaData?.source_references && mediaData.source_references.length > 0 && (
+                    <div className="pt-3 border-t border-slate-800/60 space-y-1">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block">Grounding Passages:</span>
+                      {mediaData.source_references.map((ref, i) => (
+                        <p key={i} className="text-[11px] text-slate-400 italic bg-slate-900/40 p-2 rounded-lg border border-slate-800/50">
+                          📌 {ref}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right 7 Cols: Live Spoken Script (Sentence Karaoke Highlighting) */}
+                <div className="lg:col-span-7 p-4 sm:p-5 space-y-3.5">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-800/60">
+                    <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-amber-400">
+                      <Volume2 className="w-3.5 h-3.5" />
+                      <span>Spoken Script ({mediaData?.difficulty || concept.difficulty} Level)</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
+                      Click any sentence to jump audio ⏭
+                    </span>
+                  </div>
+
+                  <div className="max-h-[340px] overflow-y-auto pr-1 space-y-2.5 custom-scrollbar">
+                    {sentences.map((sent, idx) => {
+                      const isActive = idx === activeSentenceIndex && (isPlaying || currentTime > 0);
+                      const isCovered = idx < activeSentenceIndex;
+                      return (
+                        <div
+                          key={idx}
+                          ref={isActive ? activeSentenceRef : null}
+                          onClick={() => seekToSentence(sent)}
+                          className={`p-3.5 rounded-xl border transition-all duration-300 cursor-pointer select-none text-xs sm:text-sm leading-relaxed ${
+                            isActive
+                              ? 'bg-gradient-to-r from-amber-500/25 via-amber-500/10 to-transparent border-l-4 border-amber-400 text-amber-100 font-semibold shadow-xl shadow-amber-500/10 ring-1 ring-amber-400/40 scale-[1.01]'
+                              : isCovered
+                              ? 'bg-slate-900/40 border-slate-800/80 text-slate-300 hover:bg-slate-800/50 hover:text-white'
+                              : 'bg-slate-900/20 border-slate-800/40 text-slate-500 hover:bg-slate-800/30 hover:text-slate-400'
+                          }`}
+                        >
+                          <div className="flex items-start space-x-2">
+                            {isActive ? (
+                              <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/40 flex-shrink-0 mt-0.5 animate-pulse">
+                                <Volume2 className="w-3 h-3 animate-bounce" />
+                                <span>Speaking</span>
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-600 font-mono mt-0.5 flex-shrink-0">
+                                {idx + 1}.
+                              </span>
+                            )}
+                            <span className={isActive ? 'font-medium text-amber-100' : ''}>
+                              {sent.text}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
           </div>
