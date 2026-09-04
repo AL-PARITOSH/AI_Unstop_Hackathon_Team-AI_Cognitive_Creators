@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: ai-teacher-platform
+    env: docker
+    plan: standard
+    region: oregon
+    healthCheckPath: /api/status
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: AUTH_SECRET_KEY
+        generateValue: true
+      - key: PORT
+        value: 8000
+

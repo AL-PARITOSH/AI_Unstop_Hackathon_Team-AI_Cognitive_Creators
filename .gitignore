@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Production build (built automatically by Docker on deploy)
+frontend/dist/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Environment Variables & Secrets (Keep your API keys safe!)
+.env
+.env.local
+.env.*.local
+.streamlit/secrets.toml
+
+
+# Database & Vector stores
+*.db
+*.sqlite3
+chroma_db/
+
+# Uploads & Media temporary cache
+uploads/*
+!uploads/.gitkeep
+media_cache/*
+!media_cache/teacher_avatar_default.png
+
+# Logs & Temporary files
+*.log
+.gemini/
+scratch/
