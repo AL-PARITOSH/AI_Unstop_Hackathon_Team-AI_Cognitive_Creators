@@ -13,12 +13,14 @@ import CheckpointTab from './components/CheckpointTab';
 import AssessmentTab from './components/AssessmentTab';
 import ProgressDashboardTab from './components/ProgressDashboardTab';
 import LearningPathTab from './components/LearningPathTab';
+import SettingsTab from './components/SettingsTab';
 import FlashcardsModal from './components/FlashcardsModal';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function MainApp() {
   const { user, isAuthenticated, loginDemo } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
-  const [isLandingView, setIsLandingView] = useState(false);
+  const [isLandingView, setIsLandingView] = useState(() => !localStorage.getItem('ai_teacher_token'));
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState('login');
   const [flashcardsModalOpen, setFlashcardsModalOpen] = useState(false);
@@ -139,113 +141,115 @@ function MainApp() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Landing Page for Visitors / Marketing */}
-        {isLandingView && (
-          <LandingPage
-            onOpenAuth={handleOpenAuth}
-            onLaunchDemo={handleLaunchDemo}
-          />
-        )}
+        <ErrorBoundary onReset={() => { setIsLandingView(true); setActiveTab('home'); }}>
+          {/* Landing Page for Visitors / Marketing */}
+          {isLandingView && (
+            <LandingPage
+              onOpenAuth={handleOpenAuth}
+              onLaunchDemo={handleLaunchDemo}
+            />
+          )}
 
-        {/* Authenticated Workspace Tabs */}
-        {!isLandingView && (
-          <>
-            {activeTab === 'home' && (
-              <HomeTab
-                setActiveTab={setActiveTab}
-                onLaunchDemo={handleLaunchDemo}
-                recentSession={recentSession}
-                onResumeSession={handleResumeRecent}
-              />
-            )}
+          {/* Authenticated Workspace Tabs */}
+          {!isLandingView && (
+            <>
+              {activeTab === 'home' && (
+                <HomeTab
+                  setActiveTab={setActiveTab}
+                  onLaunchDemo={handleLaunchDemo}
+                  recentSession={recentSession}
+                  onResumeSession={handleResumeRecent}
+                />
+              )}
 
-            {activeTab === 'profile' && (
-              <ProfileTab
-                profile={user || profile}
-                onUpdateProfile={(updated) => setProfile(updated)}
-              />
-            )}
+              {activeTab === 'profile' && (
+                <ProfileTab
+                  profile={user || profile}
+                  onUpdateProfile={(updated) => setProfile(updated)}
+                />
+              )}
 
-            {activeTab === 'source' && (
-              <SourceTopicTab
-                onPlanGenerated={handlePlanGenerated}
-                setSourceMode={setSourceMode}
-              />
-            )}
+              {activeTab === 'source' && (
+                <SourceTopicTab
+                  onPlanGenerated={handlePlanGenerated}
+                  setSourceMode={setSourceMode}
+                />
+              )}
 
-            {activeTab === 'path' && (
-              <LearningPathTab
-                onStartLessonWithTopic={async (stageTopic) => {
-                  setSourceMode('General knowledge topic mode');
-                  try {
-                    const res = await axios.post('/api/lessons/plan', {
-                      topic: stageTopic,
-                      source_mode: 'General knowledge topic mode'
-                    });
-                    handlePlanGenerated(res.data.session_id, res.data.state);
-                  } catch (err) {
-                    console.error('Failed to start stage lesson:', err);
-                  }
-                }}
-              />
-            )}
+              {activeTab === 'path' && (
+                <LearningPathTab
+                  onStartLessonWithTopic={async (stageTopic) => {
+                    setSourceMode('General knowledge topic mode');
+                    try {
+                      const res = await axios.post('/api/lessons/plan', {
+                        topic: stageTopic,
+                        source_mode: 'General knowledge topic mode'
+                      });
+                      handlePlanGenerated(res.data.session_id, res.data.state);
+                    } catch (err) {
+                      console.error('Failed to start stage lesson:', err);
+                    }
+                  }}
+                />
+              )}
 
-            {activeTab === 'plan' && (
-              <LessonPlanTab
-                lessonPlan={lessonPlan}
-                onStartLesson={() => setActiveTab('lesson')}
-                onRegeneratePlan={handleRegeneratePlan}
-              />
-            )}
+              {activeTab === 'plan' && (
+                <LessonPlanTab
+                  lessonPlan={lessonPlan}
+                  onStartLesson={() => setActiveTab('lesson')}
+                  onRegeneratePlan={handleRegeneratePlan}
+                />
+              )}
 
-            {activeTab === 'lesson' && (
-              <InteractiveLessonTab
-                sessionId={sessionId}
-                lessonPlan={lessonPlan}
-                conceptIndex={conceptIndex}
-                setConceptIndex={setConceptIndex}
-                onProceedToCheckpoint={() => setActiveTab('checkpoint')}
-                onOpenFlashcards={(sid) => {
-                  setFlashcardsSessionId(sid || sessionId);
-                  setFlashcardsModalOpen(true);
-                }}
-              />
-            )}
+              {activeTab === 'lesson' && (
+                <InteractiveLessonTab
+                  sessionId={sessionId}
+                  lessonPlan={lessonPlan}
+                  conceptIndex={conceptIndex}
+                  setConceptIndex={setConceptIndex}
+                  onProceedToCheckpoint={() => setActiveTab('checkpoint')}
+                  onOpenFlashcards={(sid) => {
+                    setFlashcardsSessionId(sid || sessionId);
+                    setFlashcardsModalOpen(true);
+                  }}
+                />
+              )}
 
-            {activeTab === 'checkpoint' && (
-              <CheckpointTab
-                sessionId={sessionId}
-                lessonPlan={lessonPlan}
-                conceptIndex={conceptIndex}
-                onAdvanceConcept={(nextIdx) => {
-                  setConceptIndex(nextIdx);
-                  setActiveTab('lesson');
-                }}
-                onGoToAssessment={() => setActiveTab('assessment')}
-              />
-            )}
+              {activeTab === 'checkpoint' && (
+                <CheckpointTab
+                  sessionId={sessionId}
+                  lessonPlan={lessonPlan}
+                  conceptIndex={conceptIndex}
+                  onAdvanceConcept={(nextIdx) => {
+                    setConceptIndex(nextIdx);
+                    setActiveTab('lesson');
+                  }}
+                  onGoToAssessment={() => setActiveTab('assessment')}
+                />
+              )}
 
-            {activeTab === 'assessment' && (
-              <AssessmentTab
-                sessionId={sessionId}
-                lessonPlan={lessonPlan}
-                onRestartLesson={() => setActiveTab('source')}
-              />
-            )}
+              {activeTab === 'assessment' && (
+                <AssessmentTab
+                  sessionId={sessionId}
+                  lessonPlan={lessonPlan}
+                  onRestartLesson={() => setActiveTab('source')}
+                />
+              )}
 
-            {activeTab === 'progress' && (
-              <ProgressDashboardTab
-                setActiveTab={setActiveTab}
-              />
-            )}
+              {activeTab === 'progress' && (
+                <ProgressDashboardTab
+                  setActiveTab={setActiveTab}
+                />
+              )}
 
-            {activeTab === 'settings' && (
-              <SettingsTab
-                status={status}
-              />
-            )}
-          </>
-        )}
+              {activeTab === 'settings' && (
+                <SettingsTab
+                  status={status}
+                />
+              )}
+            </>
+          )}
+        </ErrorBoundary>
       </main>
 
       {/* Active Recall Flashcards Modal (Section 18) */}

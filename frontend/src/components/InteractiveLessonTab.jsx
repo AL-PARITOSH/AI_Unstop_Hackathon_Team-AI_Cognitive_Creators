@@ -121,18 +121,18 @@ export default function InteractiveLessonTab({
   // Split spoken script into natural sentences and calculate cumulative duration ratios
   const sentences = useMemo(() => {
     const script = mediaData?.spoken_script || concept?.spoken_script || '';
-    if (!script.trim()) return [];
+    if (!script || typeof script !== 'string' || !script.trim()) return [];
     // Split sentences on full stops, question marks, exclamation marks, devanagari danda, or newlines
     const raw = script.match(/[^.!?।\n]+[.!?।]?/g) || [script];
-    const cleanList = raw.map(s => s.trim()).filter(Boolean);
+    const cleanList = raw.map(s => (typeof s === 'string' ? s.trim() : '')).filter(Boolean);
     if (cleanList.length === 0) return [{ index: 0, text: script, startRatio: 0, endRatio: 1 }];
 
     const totalChars = cleanList.reduce((sum, s) => sum + s.length, 0);
     let cumChars = 0;
     return cleanList.map((text, idx) => {
-      const startRatio = cumChars / totalChars;
+      const startRatio = totalChars > 0 ? cumChars / totalChars : 0;
       cumChars += text.length;
-      const endRatio = cumChars / totalChars;
+      const endRatio = totalChars > 0 ? cumChars / totalChars : 1;
       return {
         index: idx,
         text,
@@ -149,9 +149,12 @@ export default function InteractiveLessonTab({
     return pts.map((pt, idx) => {
       const startRatio = idx / pts.length;
       const endRatio = (idx + 1) / pts.length;
+      const safeText = typeof pt === 'string' 
+        ? pt 
+        : (pt?.point || pt?.text || pt?.title || (typeof pt === 'object' ? JSON.stringify(pt) : String(pt)));
       return {
         index: idx,
-        text: pt,
+        text: safeText,
         startRatio,
         endRatio
       };
@@ -160,7 +163,8 @@ export default function InteractiveLessonTab({
 
   // Real-time time update handler on audio or video element
   const handleTimeUpdate = (e) => {
-    const media = e.target;
+    const media = e?.target;
+    if (!media) return;
     const cur = media.currentTime || 0;
     const dur = media.duration || duration || mediaData?.audio_duration || 1;
     setCurrentTime(cur);
@@ -185,45 +189,61 @@ export default function InteractiveLessonTab({
 
   // Seek audio/video to exact sentence start
   const seekToSentence = (sent) => {
-    const media = videoRef.current || audioRef.current;
-    if (media && duration > 0) {
-      const target = sent.startRatio * duration;
-      media.currentTime = target;
-      media.play().catch(() => {});
-      setIsPlaying(true);
-      setActiveSentenceIndex(sent.index);
+    try {
+      const media = videoRef.current || audioRef.current;
+      if (media && duration > 0 && sent) {
+        const target = (sent.startRatio || 0) * duration;
+        media.currentTime = target;
+        media.play().catch(() => {});
+        setIsPlaying(true);
+        setActiveSentenceIndex(sent.index || 0);
+      }
+    } catch (err) {
+      console.warn('Seek to sentence error:', err);
     }
   };
 
   // Seek audio/video to exact whiteboard bullet point start
   const seekToPoint = (pt) => {
-    const media = videoRef.current || audioRef.current;
-    if (media && duration > 0) {
-      const target = pt.startRatio * duration;
-      media.currentTime = target;
-      media.play().catch(() => {});
-      setIsPlaying(true);
-      setActivePointIndex(pt.index);
+    try {
+      const media = videoRef.current || audioRef.current;
+      if (media && duration > 0 && pt) {
+        const target = (pt.startRatio || 0) * duration;
+        media.currentTime = target;
+        media.play().catch(() => {});
+        setIsPlaying(true);
+        setActivePointIndex(pt.index || 0);
+      }
+    } catch (err) {
+      console.warn('Seek to point error:', err);
     }
   };
 
   // Play / Pause toggle
   const togglePlayPause = () => {
-    const media = videoRef.current || audioRef.current;
-    if (!media) return;
-    if (isPlaying) {
-      media.pause();
-      setIsPlaying(false);
-    } else {
-      media.play().catch(() => {});
-      setIsPlaying(true);
+    try {
+      const media = videoRef.current || audioRef.current;
+      if (!media) return;
+      if (isPlaying) {
+        media.pause();
+        setIsPlaying(false);
+      } else {
+        media.play().catch(() => {});
+        setIsPlaying(true);
+      }
+    } catch (err) {
+      console.warn('Play/Pause error:', err);
     }
   };
 
   // Auto-scroll active sentence into view smoothly
   useEffect(() => {
-    if (activeSentenceRef.current && isPlaying) {
-      activeSentenceRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    try {
+      if (activeSentenceRef.current && isPlaying && typeof activeSentenceRef.current.scrollIntoView === 'function') {
+        activeSentenceRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    } catch (err) {
+      console.warn('Auto-scroll warning:', err);
     }
   }, [activeSentenceIndex, isPlaying]);
 
@@ -339,14 +359,14 @@ export default function InteractiveLessonTab({
         <div>
           <div className="flex items-center space-x-2 mb-1">
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-              Concept {conceptIndex + 1} of {lessonPlan.concepts.length}
+              Concept {conceptIndex + 1} of {lessonPlan?.concepts?.length || 1}
             </span>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 capitalize">
-              {concept.difficulty} Level
+              {concept?.difficulty || 'Medium'} Level
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-            {concept.title}
+            {concept?.title || 'Concept'}
           </h2>
         </div>
 
@@ -361,11 +381,11 @@ export default function InteractiveLessonTab({
             <ChevronLeft className="w-5 h-5" />
           </button>
           <span className="text-xs text-slate-400 font-mono">
-            {conceptIndex + 1} / {lessonPlan.concepts.length}
+            {conceptIndex + 1} / {lessonPlan?.concepts?.length || 1}
           </span>
           <button
-            onClick={() => setConceptIndex(Math.min(lessonPlan.concepts.length - 1, conceptIndex + 1))}
-            disabled={conceptIndex === lessonPlan.concepts.length - 1}
+            onClick={() => setConceptIndex(Math.min((lessonPlan?.concepts?.length || 1) - 1, conceptIndex + 1))}
+            disabled={conceptIndex >= (lessonPlan?.concepts?.length || 1) - 1}
             className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-40 transition"
             title="Next Concept"
           >
@@ -509,7 +529,7 @@ export default function InteractiveLessonTab({
                 <span>Simplified Real-World Analogy</span>
               </div>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                {mediaData?.simple_analogy || concept.simple_analogy}
+                {mediaData?.simple_analogy || concept?.simple_analogy || ''}
               </p>
             </div>
           )}
@@ -651,7 +671,7 @@ export default function InteractiveLessonTab({
                   <div className="flex items-center justify-between pb-2 border-b border-slate-800/60">
                     <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-amber-400">
                       <Volume2 className="w-3.5 h-3.5" />
-                      <span>Spoken Script ({mediaData?.difficulty || concept.difficulty} Level)</span>
+                      <span>Spoken Script ({mediaData?.difficulty || concept?.difficulty || 'Standard'} Level)</span>
                     </div>
                     <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
                       Click any sentence to jump audio ⏭
