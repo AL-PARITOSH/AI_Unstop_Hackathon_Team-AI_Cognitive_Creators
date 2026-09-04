@@ -126,7 +126,7 @@ class LearningReport(BaseModel):
     citations: List[str]
 
 
-# State Dictionary compatible with LangGraph and Streamlit
+# State Dictionary compatible with LangGraph and FastAPI/React
 class TeacherState(BaseModel):
     topic: str
     source_mode: str # General knowledge topic mode OR Document-grounded mode

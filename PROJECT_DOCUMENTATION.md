@@ -392,3 +392,4 @@ Access the application on `http://<your-server-ip>:8000`.
 
 *Author: Team AI Cognitive Creators*  
 *Event: AI Innovation Hackathon 2026 – Round 2 Technical Assessment*
+

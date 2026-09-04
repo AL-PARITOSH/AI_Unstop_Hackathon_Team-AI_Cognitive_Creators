@@ -37,7 +37,7 @@ FALLBACK_MODELS = [
 def get_groq_client() -> Groq:
     """Initialize Groq client."""
     if not GROQ_API_KEY:
-        raise ValueError("GROQ_API_KEY is missing. Please set it in .streamlit/secrets.toml or environment.")
+        raise ValueError("GROQ_API_KEY is missing. Please set it in .env or environment variables.")
     return Groq(api_key=GROQ_API_KEY)
 
 

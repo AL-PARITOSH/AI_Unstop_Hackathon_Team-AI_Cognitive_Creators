@@ -19,7 +19,7 @@
 | **9. Multilingual Capability** | `src/prompts.py`, `src/tts_service.py` | English, Hindi (Devanagari), Hinglish script generation and TTS mapping | English default |
 | **10. Student Questioning & Assessment** | `src/schemas.py`, `src/pedagogy_graph.py` | Checkpoint questions per concept + Final comprehensive quiz (MCQ, short answer, reasoning) | Standard MCQ quiz |
 | **11. Adaptive Remediation** | `src/pedagogy_graph.py` | Misconception identification, alternate water-flow analogies, max 2 remediation retries | Direct answer feedback |
-| **12. Working Application** | `app.py`, `src/ui_components.py` | Complete interactive Streamlit UI with state preservation across tabs & restarts | Full local execution |
+| **12. Working Application** | `backend/main.py`, `frontend/` | Complete interactive full-stack web application (FastAPI backend + React Vite frontend) with interactive doubt solver, flashcards, and video player | Full local & cloud execution |
 | **13. RAG Grounding & Citations** | `src/rag_service.py` | Exact `[Document — Page N]` citations, `<retrieved_source>` prompt boundary protection | `insufficient_source_evidence` fallback |
 | **14. Speech-to-Text Answer Input** | `src/stt_service.py` | Groq Whisper `st.audio_input` audio transcription | Local `faster-whisper` / Typed text |
 | **15. Subject-Aware Visuals** | `src/visual_service.py` | Math formulas, physics circuits/plots, CS code cards, history timelines, biology structure diagrams | Matplotlib concept card |
@@ -32,12 +32,13 @@
 
 ```mermaid
 flowchart TD
-    User([Learner / Student]) -->|Interacts| UI[Streamlit Frontend app.py]
+    User([Learner / Student]) -->|Interacts| UI[React Vite Frontend: Port 5173]
     
-    subgraph Core Engine
-        UI --> Profile[Student Profile Manager]
-        UI --> RAG[RAG & Document Processor]
-        UI --> Graph[LangGraph Pedagogical Workflow]
+    subgraph Full-Stack Core
+        UI -->|REST & WebSockets| API[FastAPI Backend: Port 8000]
+        API --> Profile[Student Profile Manager]
+        API --> RAG[RAG & Document Processor]
+        API --> Graph[LangGraph Pedagogical Workflow]
     end
 
     subgraph RAG Infrastructure
@@ -60,7 +61,8 @@ flowchart TD
         Visuals & EdgeTTS & SadTalker --> Compositor[FFmpeg Video Compositor]
     end
 
-    Compositor -->|Output MP4 & Audio-Visual Cards| UI
+    Compositor -->|Output MP4 & Media Assets| API
+    API -->|Real-Time Streaming & Visual Cards| UI
 ```
 
 ---
@@ -81,39 +83,40 @@ flowchart TD
 
 ## 4. Setup & Running Instructions
 
-### Windows / macOS / Linux
+### Quick Start (Single Command - Windows)
+Double-click `run_fullstack.bat` or execute in PowerShell:
+```cmd
+.\run_fullstack.bat
+```
+This automatically initializes the FastAPI backend on port 8000 and the React Vite frontend on port 5173.
 
-1. **Clone & Environment Setup:**
+### Manual Setup (Windows / macOS / Linux)
+
+1. **Backend Setup:**
    ```bash
-   git clone <repository_url>
-   cd final
+   # Create & activate virtual environment
    python -m venv venv
-   # On Windows:
-   venv\Scripts\activate
-   # On macOS/Linux:
-   source venv/bin/activate
-   ```
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-2. **Install Dependencies:**
-   ```bash
+   # Install dependencies
    pip install -r requirements.txt
+
+   # Configure .env file with your API key
+   cp .env.example .env
+
+   # Launch FastAPI server
+   python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
    ```
 
-3. **Configure Secrets & Environment:**
-   Ensure `.streamlit/secrets.toml` or `.env` contains your keys:
-   ```toml
-   GROQ_API_KEY = "gsk_..."
-   GROQ_LLM_MODEL = "llama-3.3-70b-versatile"
-   LANGSMITH_API_KEY = "lsv2_pt_..."
-   ```
-
-4. **Launch Application:**
+2. **Frontend Setup:**
    ```bash
-   streamlit run app.py
+   cd frontend
+   npm install
+   npm run dev
    ```
-   Open `http://localhost:8501` in your browser.
+   Open `http://localhost:5173` in your browser.
 
-5. **Run Unit Tests:**
+3. **Run Unit Tests:**
    ```bash
    python -m unittest tests/test_all.py
    ```
@@ -123,9 +126,9 @@ flowchart TD
 ## 5. Hackathon 3–7 Minute Demo Script
 
 1. **Step 1: Introduction & System Status (0:00 - 0:45)**
-   - Open Streamlit app.
+   - Open Web App at `http://localhost:5173`.
    - Show the visible **Stepper Bar** (`Profile -> Source -> Lesson Plan -> Learn -> Checkpoints -> Assessment -> Report`).
-   - Expand `System Status` in sidebar to demonstrate active Groq LLM, Edge TTS, and ChromaDB.
+   - Observe the live backend health status indicating active Groq LLM, Edge TTS, and ChromaDB.
 
 2. **Step 2: Onboarding & Source Input (0:45 - 1:45)**
    - Select **Learner Profile**: Set language to `Hinglish` and duration to `20 Mins`.

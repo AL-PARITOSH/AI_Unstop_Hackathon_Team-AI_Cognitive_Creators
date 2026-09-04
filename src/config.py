@@ -13,17 +13,8 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Helper function to get config value with precedence: Streamlit secrets -> Env var -> Default
+# Helper function to get config value from environment variables or default
 def get_config(key: str, default: Optional[str] = None) -> str:
-    # Check Streamlit secrets first if running under streamlit
-    try:
-        import streamlit as st
-        if hasattr(st, "secrets") and key in st.secrets:
-            return str(st.secrets[key])
-    except Exception:
-        pass
-    
-    # Fallback to environment variables
     val = os.getenv(key)
     if val is not None:
         return val
